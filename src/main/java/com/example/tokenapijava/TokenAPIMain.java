@@ -4,10 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class TokenApiJavaApplication {
-
+public class TokenAPIMain {
     public static void main(String[] args) {
-        SpringApplication.run(TokenApiJavaApplication.class, args);
+        SpringApplication.run(TokenAPIMain.class, args);
     }
-
 }
