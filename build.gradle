@@ -29,9 +29,12 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    
+    testImplementation 'org.springframework.boot:spring-boot-resttestclient'
+    testImplementation 'org.springframework.boot:spring-boot-restclient'
+
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    runtimeOnly 'org.springframework.boot:spring-boot-restclient'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // See https://docs.gradle.org/8.3/userguide/upgrading_version_8.html#test_framework_implementation_dependencies
 }
