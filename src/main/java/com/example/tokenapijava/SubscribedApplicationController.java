@@ -1,6 +1,14 @@
 package com.example.tokenapijava;
 
+import org.springdoc.core.annotations.ParameterObject;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.net.URI;
 import java.util.UUID;
+import java.util.List;
 
 import jakarta.validation.Valid;
 
@@ -47,6 +56,18 @@ class SubscribedApplicationController {
             .buildAndExpand(savedApp.Id())
             .toUri();
         return ResponseEntity.created(locationOfNewApp).build();
+    }
+
+    @GetMapping("/list")
+    @Operation(summary = "Liste toutes les applications enregistrées.")
+    @Tag(name = "Applications")
+    public ResponseEntity<List<AppsSchema>> listAllApplications(@PageableDefault(sort = "appName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
+        Page<AppsSchema> allApps = appsRepository.findAll(pageable);
+
+        if (allApps.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(allApps.getContent());
     }
     
 }
