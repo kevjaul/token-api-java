@@ -10,6 +10,6 @@ public record UserTokenSchema(
     @Schema(defaultValue = "0")
     Integer tokenAmount, 
     
-    Long linkedApp) {
+    String linkedApp) {
 
 }

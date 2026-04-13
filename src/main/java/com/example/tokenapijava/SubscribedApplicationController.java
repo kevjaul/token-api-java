@@ -55,7 +55,7 @@ class SubscribedApplicationController {
             .path("/api/apps/{id}")
             .buildAndExpand(savedApp.Id())
             .toUri();
-        return ResponseEntity.created(locationOfNewApp).build();
+        return ResponseEntity.created(locationOfNewApp).body("{\"api_key\": \"" + savedApp.apiKey() + "\"}");
     }
 
     @GetMapping("/list")

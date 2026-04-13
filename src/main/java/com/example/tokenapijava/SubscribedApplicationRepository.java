@@ -5,6 +5,9 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 
 import com.example.tokenapijava.Schemas.AppsSchema;
 
-interface SubscribedApplicationRepository extends CrudRepository<AppsSchema, Long>, PagingAndSortingRepository<AppsSchema, Long>{
+import java.util.Optional;
+
+public interface SubscribedApplicationRepository extends CrudRepository<AppsSchema, Long>, PagingAndSortingRepository<AppsSchema, Long>{
     AppsSchema findByAppName(String appName);
+    Optional<AppsSchema> findByApiKey(String apiKey);
 }

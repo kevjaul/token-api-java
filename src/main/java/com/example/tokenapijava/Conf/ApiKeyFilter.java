@@ -14,25 +14,31 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import com.example.tokenapijava.SubscribedApplicationRepository;
+import com.example.tokenapijava.Schemas.AppsSchema;
+
 @Component
 public class ApiKeyFilter extends OncePerRequestFilter {
+    
+    private final SubscribedApplicationRepository appsRpository;
+
+    public ApiKeyFilter(SubscribedApplicationRepository repository) {
+        this.appsRpository = repository;
+    }
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return !request.getRequestURI().startsWith("/api/tokens/");
     }
     @Override
-    protected void doFilterInternal(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        FilterChain filterChain) throws ServletException, IOException{
+    protected void doFilterInternal( HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException{
         String apiKey = request.getHeader("X-Api-Key");
-        if (apiKey == null || !apiKey.equals("xxx")) {
+        if (apiKey == null || appsRpository.findByApiKey(apiKey).isEmpty()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-        Authentication authentication = new UsernamePasswordAuthenticationToken(apiKey, null, List.of());
+        AppsSchema app = appsRpository.findByApiKey(apiKey).get();
+        Authentication authentication = new UsernamePasswordAuthenticationToken(app, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
-        
     }
 }
