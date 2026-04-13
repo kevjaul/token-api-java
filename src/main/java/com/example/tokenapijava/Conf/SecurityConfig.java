@@ -2,7 +2,7 @@ package com.example.tokenapijava.Conf;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,22 +12,65 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+
+import io.swagger.v3.oas.models.info.Info;
 
 @Configuration
 public class SecurityConfig {
-    
+
+    private final ApiKeyFilter apiKeyFilter;
+
+    public SecurityConfig(ApiKeyFilter apiKeyFilter) {
+        this.apiKeyFilter = apiKeyFilter;
+    }
+
     @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+            .components(new Components()
+                .addSecuritySchemes("apiKeyAuth", 
+                    new SecurityScheme()
+                    .type(SecurityScheme.Type.APIKEY)
+                    .in(SecurityScheme.In.HEADER)
+                    .name("X-Api-Key"))
+            )
+
+            .info(new Info()
+                .title("Token API")
+                .version("1.0.0")
+            );
+    }
+
+    @Bean
+    @Order(1)
+    SecurityFilterChain apiKeyFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/api/tokens/**")
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(request -> request
+                .requestMatchers("/api/tokens/**")
+                .authenticated())
+            .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+    @Bean
+    @Order(2)
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .securityMatcher("/**")
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/apps/**")
-                        .permitAll()
+                        .requestMatchers("/api/apps/**").permitAll()
                         .requestMatchers("/swagger-ui/**",
                             "/swagger-ui.html",
-                            "/v3/api-docs/**")
-                        .permitAll())
-                .httpBasic(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable());
+                            "/v3/api-docs/**").permitAll()
+                        .anyRequest().permitAll())
+                .httpBasic(Customizer.withDefaults());
         return http.build();
     }
     @Bean
