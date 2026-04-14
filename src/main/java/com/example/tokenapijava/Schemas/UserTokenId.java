@@ -1,11 +1,24 @@
 package com.example.tokenapijava.Schemas;
 
-import org.springframework.data.relational.core.mapping.Table;
+import jakarta.persistence.Access;
+import jakarta.persistence.AccessType;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Table;
 
-@Table("USER_TOKENS")
-public record UserTokenId(
-    String userId,
+import java.io.Serializable;
 
-    String linkedApp
+import lombok.*;
 
-)  {}
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Embeddable
+@Table(name = "USER_TOKENS")
+@Access(AccessType.FIELD)
+public class UserTokenId implements Serializable{
+    String userId;
+
+    String linkedApp;
+
+}

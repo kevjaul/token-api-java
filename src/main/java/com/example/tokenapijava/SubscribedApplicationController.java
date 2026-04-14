@@ -53,9 +53,9 @@ class SubscribedApplicationController {
         AppsSchema savedApp = appsRepository.save(newApp);
         URI locationOfNewApp = Ucb
             .path("/api/apps/{id}")
-            .buildAndExpand(savedApp.Id())
+            .buildAndExpand(savedApp.getId())
             .toUri();
-        return ResponseEntity.created(locationOfNewApp).body("{\"api_key\": \"" + savedApp.apiKey() + "\"}");
+        return ResponseEntity.created(locationOfNewApp).body("{\"api_key\": \"" + savedApp.getApiKey() + "\"}");
     }
 
     @GetMapping("/list")

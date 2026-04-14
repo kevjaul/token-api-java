@@ -1,18 +1,28 @@
 package com.example.tokenapijava.Schemas;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
+import jakarta.persistence.Access;
+import jakarta.persistence.AccessType;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import com.example.tokenapijava.Schemas.UserTokenId;
+import lombok.*;
 
-@Table("TOKENS")
-public record UserTokenSchema( 
-    @Id
-    UserTokenId Id, 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode
+@Entity
+@Table(name = "TOKENS")
+@Access(AccessType.FIELD)
+public class UserTokenSchema{
+    @EmbeddedId
+    private UserTokenId Id;
     
     @Schema(defaultValue = "0")
-    Long tokenAmount 
+    private Long tokenAmount;
     
-) {}
+}

@@ -4,29 +4,47 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.NotBlank;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Embedded;
-import org.springframework.data.relational.core.mapping.Table;
+import jakarta.persistence.Access;
+import jakarta.persistence.AccessType;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Table("APPLICATIONS")
-public record AppsSchema(
-    @Id 
-    Long Id, 
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode
+@Entity
+@Table(name = "APPLICATIONS")
+@Access(AccessType.FIELD)
+public class AppsSchema{
+     
+    
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    private Long Id;
 
     @NotBlank @JsonProperty("name") 
-    String appName, 
+    private String appName;
 
     @NotBlank 
-    String apiKey,
+    private String apiKey;
 
     @JsonProperty("max_token_value") @Schema(defaultValue = "15")
-    Long maxTokenAmount, 
+    private Long maxTokenAmount;
 
     @JsonProperty("min_token_value") @Schema(defaultValue = "0") 
-    Long minTokenAmount, 
+    private Long minTokenAmount;
 
-    @Embedded(onEmpty = Embedded.OnEmpty.USE_NULL) @JsonProperty("token_regeneration_time") 
-    TokenRegenerationSchema tokenRegenerationTime
-) {}
+    @Embedded @JsonProperty("token_regeneration_time") 
+    private TokenRegenerationSchema tokenRegenerationTime;
+
+}

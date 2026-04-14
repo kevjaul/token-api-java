@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.Schemas.TokenRegenerationSchema;
 
-
 @JsonTest
 class ApplicationsJsonTests {
 
@@ -46,15 +45,18 @@ class ApplicationsJsonTests {
         assertThat(json.write(application)).hasJsonPathNumberValue("@.Id");
         assertThat(json.write(application)).extractingJsonPathNumberValue("@.Id").isEqualTo(1);
         assertThat(json.write(application)).hasJsonPathNumberValue("@.token_regeneration_time.days");
-        assertThat(json.write(application)).extractingJsonPathNumberValue("@.token_regeneration_time.days").isEqualTo(applications.get(0).tokenRegenerationTime().days());
+        assertThat(json.write(application)).extractingJsonPathNumberValue("@.token_regeneration_time.days").isEqualTo(applications.get(0).getTokenRegenerationTime().getDays());
     }
 
     @Test
     void applicationDeserializationTest() throws IOException {
         ClassPathResource source = new ClassPathResource("com/example/tokenapijava/json/OneApplication.json");
         String jsonObject = Files.readString(source.getFile().toPath());
-        assertThat(json.parse(jsonObject)).isEqualTo(applications.get(0));
-        assertThat(json.parseObject(jsonObject).Id()).isEqualTo(applications.get(0).Id());
-        assertThat(json.parseObject(jsonObject).tokenRegenerationTime().days()).isEqualTo(applications.get(0).tokenRegenerationTime().days());
+
+        AppsSchema actual = json.parseObject(jsonObject);
+
+        AppsSchema expected = applications.get(0);
+
+        assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
     }
 }

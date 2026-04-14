@@ -57,8 +57,13 @@ class TokensJsonTests {
     void userTokenDeserializationTest() throws IOException {
         ClassPathResource source = new ClassPathResource("com/example/tokenapijava/json/OneUserToken.json");
         String jsonObject = Files.readString(source.getFile().toPath());
-        assertThat(json.parse(jsonObject)).isEqualTo(usersTokens.get(0));
-        assertThat(json.parseObject(jsonObject).Id()).isEqualTo(usersTokens.get(0).Id());
-        assertThat(json.parseObject(jsonObject).tokenAmount()).isEqualTo(usersTokens.get(0).tokenAmount());
+        
+        UserTokenSchema actual = json.parseObject(jsonObject);
+
+        UserTokenSchema expected = usersTokens.get(0);
+
+        assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+        assertThat(actual.getId()).usingRecursiveComparison().isEqualTo(expected.getId());
+        assertThat(actual.getTokenAmount()).isEqualTo(expected.getTokenAmount());
     }
 }
