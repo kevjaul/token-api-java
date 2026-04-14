@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
+import com.example.tokenapijava.DTOs.ManageTokensRequest;
 import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.Schemas.UserTokenId;
 import com.example.tokenapijava.Schemas.UserTokenSchema;
@@ -64,5 +65,29 @@ public class TokenController {
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return ResponseEntity.ok(userToken.getTokenAmount());
     }
+
+    @PostMapping("/{userId}/add")
+    @Operation(summary = "Ajoute des tokens à un utilisateur.")
+    @Tag(name = "Tokens")
+    public ResponseEntity<?> addUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth){
+        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        UserTokenId id = new UserTokenId(userId,app.getApiKey());
+        UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (manageTokens.amount() <= 0){
+            return ResponseEntity.badRequest().body("You should add at least 1 token");
+        }
+        else if (manageTokens.amount() == app.getMaxTokenAmount()){
+            return ResponseEntity.ok().build();
+        }
+        else if( manageTokens.amount() > app.getMaxTokenAmount() - userToken.getTokenAmount()){
+            userToken.setTokenAmount(app.getMaxTokenAmount());
+            tokenRepository.save(userToken);
+            return ResponseEntity.ok().body("{\"message\": \"Reach max token amount for this user\", \"currentTokenAmount\": " + userToken.getTokenAmount() + "}");
+        } 
+        userToken.setTokenAmount(userToken.getTokenAmount() + manageTokens.amount());
+        tokenRepository.save(userToken);
+        return ResponseEntity.ok().body("{\"message\": \"Tokens added\", \"currentTokenAmount\": " + userToken.getTokenAmount() + "}");
+    }
+    
 
 }
