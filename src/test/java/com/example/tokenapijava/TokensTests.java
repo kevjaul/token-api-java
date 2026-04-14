@@ -8,14 +8,11 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRe
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.jdbc.Sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
-import com.example.tokenapijava.Schemas.UserTokenId;
-import com.example.tokenapijava.Schemas.UserTokenSchema;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
@@ -29,8 +26,8 @@ public class TokensTests {
     TestRestTemplate restTemplate;
 
     @Test
-    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-    @Sql(scripts="data/applicationsTestDatas.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes
+    @Sql(scripts = {"data/clean.sql",
+                "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes     
     void shouldCreateANewTokenUser() {
         CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3L);
         HttpHeaders headers = new HttpHeaders();
@@ -42,7 +39,6 @@ public class TokensTests {
     }
 
     @Test
-    @DirtiesContext
     void shouldNotCreateANewTokenUserIfNotUsingApiKey() {
         CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3L);
         ResponseEntity<Void> createUserResponse = restTemplate
@@ -52,7 +48,6 @@ public class TokensTests {
     }
 
     @Test
-    @DirtiesContext
     void shouldNotCreateANewTokenUserIfApiKeyNotExist() {
         CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3L);
          HttpHeaders headers = new HttpHeaders();
@@ -62,6 +57,35 @@ public class TokensTests {
         ResponseEntity<Void> createUserResponse = restTemplate
             .postForEntity("/api/tokens/register", request, Void.class);
         assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    @Sql(scripts = {
+        "data/clean.sql",
+         "data/applicationsTestDatas.sql", //Register a valid API key for testing purposes
+         "data/usersTokensTestDatas.sql"},
+          executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) 
+    void shouldNotCreateANewTokenUserIfUserAlreadyExistsForApplication() {
+        CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3L);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<CreateApplicationUserRequest> request = new HttpEntity<>(applicationUser, headers);
+        ResponseEntity<Void> createUserResponse = restTemplate
+            .postForEntity("/api/tokens/register", request, Void.class);
+        assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+                "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldNotCreateANewTokenUserIfTokenAmountExceededForApplication() {
+        CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3000L);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<CreateApplicationUserRequest> request = new HttpEntity<>(applicationUser, headers);
+        ResponseEntity<Void> createUserResponse = restTemplate
+            .postForEntity("/api/tokens/register", request, Void.class);
+        assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
 }

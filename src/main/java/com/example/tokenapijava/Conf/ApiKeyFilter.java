@@ -27,7 +27,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     }
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/api/tokens/");
+        return !request.getServletPath().startsWith("/api/tokens/");
     }
     @Override
     protected void doFilterInternal( HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException{
@@ -39,6 +39,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         AppsSchema app = appsRpository.findByApiKey(apiKey).get();
         Authentication authentication = new UsernamePasswordAuthenticationToken(app, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
+
         filterChain.doFilter(request, response);
     }
 }

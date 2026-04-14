@@ -2,6 +2,7 @@ package com.example.tokenapijava;
 
 import java.net.URI;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,7 +38,7 @@ class TokenController {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
         UserTokenId userId = new UserTokenId(applicationUser.userId(),app.apiKey());
         if(tokenRepository.existsById(userId)){
-            return ResponseEntity.badRequest().body("User already exists");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("User already exists");
         } 
         else if(applicationUser.initialTokens() < app.minTokenAmount() || applicationUser.initialTokens() > app.maxTokenAmount()){
             return ResponseEntity.badRequest().body("Initial tokens must be between " + app.minTokenAmount() + " and " + app.maxTokenAmount());

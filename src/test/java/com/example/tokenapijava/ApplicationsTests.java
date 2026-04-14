@@ -6,14 +6,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.web.servlet.client.RestTestClient;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.example.tokenapijava.DTOs.CreateApplicationRequest;
-import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.Schemas.TokenRegenerationSchema;
 
 import com.jayway.jsonpath.DocumentContext;
@@ -41,7 +39,8 @@ public class ApplicationsTests {
     }
 
     @Test
-    @Sql("data/applicationsTestDatas.sql")
+    @Sql(scripts = {"data/clean.sql",
+                "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)    
     void shouldReturnAllApplications() {
         ResponseEntity<String> allAppsResponse = restTemplate
             .withBasicAuth("userTest1", "aaa111")
