@@ -41,7 +41,7 @@ public class ApplicationsTests {
     }
 
     @Test
-    @Sql("/applicationsTestDatas.sql")
+    @Sql("data/applicationsTestDatas.sql")
     void shouldReturnAllApplications() {
         ResponseEntity<String> allAppsResponse = restTemplate
             .withBasicAuth("userTest1", "aaa111")

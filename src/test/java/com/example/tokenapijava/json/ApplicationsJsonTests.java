@@ -34,8 +34,8 @@ class ApplicationsJsonTests {
         TokenRegenerationSchema regenerationSchema = new TokenRegenerationSchema(1, 12, 0);
         TokenRegenerationSchema regenerationSchema2 = new TokenRegenerationSchema(1, 22, 0);
         applications = List.of(
-            new AppsSchema(1L, "testApp", "xxx", 15L, 0L,regenerationSchema),
-            new AppsSchema(2L, "testApp2", "xxx", 300L, 0L, regenerationSchema2)
+            new AppsSchema(1L, "testApp", "xxa", 15L, 0L,regenerationSchema),
+            new AppsSchema(2L, "testApp2", "xxb", 300L, 0L, regenerationSchema2)
         );
     }
 

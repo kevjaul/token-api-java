@@ -1,0 +1,2 @@
+-- TokenUser
+INSERT INTO TOKENS(ID, USER_ID, TOKEN_AMOUNT, LINKED_APP) VALUES (1L, 'userTest1', 0L, 'xxa');

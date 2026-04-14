@@ -23,4 +23,4 @@ public record TokenRegenerationSchema(
     @Min(value = 0, message = "Minutes must be between 0 and 59")
     @Column("REGENMINS")
     Integer mins
-){}
+) {}

@@ -1,15 +1,18 @@
 package com.example.tokenapijava.Schemas;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-public record UserTokenSchema(
-    @Id 
-    Long Id, 
+
+import com.example.tokenapijava.Schemas.UserTokenId;
+
+@Table("TOKENS")
+public record UserTokenSchema( 
+    @Id
+    UserTokenId Id, 
     
     @Schema(defaultValue = "0")
-    Integer tokenAmount, 
+    Long tokenAmount 
     
-    String linkedApp) {
-
-}
+) {}
