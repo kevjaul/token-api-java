@@ -16,6 +16,7 @@ import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -27,7 +28,7 @@ public class TokensTests {
 
     @Test
     @Sql(scripts = {"data/clean.sql",
-                "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes     
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes     
     void shouldCreateANewTokenUser() {
         CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3L);
         HttpHeaders headers = new HttpHeaders();
@@ -77,7 +78,7 @@ public class TokensTests {
 
     @Test
     @Sql(scripts = {"data/clean.sql",
-                "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldNotCreateANewTokenUserIfTokenAmountExceededForApplication() {
         CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3000L);
         HttpHeaders headers = new HttpHeaders();
@@ -88,4 +89,17 @@ public class TokensTests {
         assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldGetTokenAmountForUser() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<Long> tokenAmountResponse = restTemplate
+            .exchange("/api/tokens/userTest1", HttpMethod.GET, request, Long.class);
+        assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(tokenAmountResponse.getBody()).isEqualTo(3L);
+    }
 }
