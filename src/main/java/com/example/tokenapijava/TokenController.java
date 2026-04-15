@@ -112,5 +112,30 @@ public class TokenController {
         tokenRepository.save(userToken);
         return ResponseEntity.ok().body("{\"message\": \"Tokens subtracted\", \"currentTokenAmount\": " + userToken.getTokenAmount() + "}");
     }
+
+    @PostMapping("/regenerate")
+    @Operation(summary = "Rajoute des tokens à tous les utilisateurs d'une application.")
+    @Tag(name = "Tokens")
+    public ResponseEntity<?> regenerateTokensForAllUsers(@RequestBody ManageTokensRequest manageTokens, Authentication auth) {
+        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        if (manageTokens.amount() <= 0){
+            return ResponseEntity.badRequest().body("You should add at least 1 token");
+        }
+        Long appMaxTokenAmount = app.getMaxTokenAmount();
+        tokenRepository.findAllById_LinkedApp(app.getApiKey()).forEach(userToken -> {
+            if (userToken.getTokenAmount() == appMaxTokenAmount){
+                return;
+            }
+            else if( manageTokens.amount() > appMaxTokenAmount - userToken.getTokenAmount()){
+                userToken.setTokenAmount(appMaxTokenAmount);
+            }
+            else{
+                userToken.setTokenAmount(userToken.getTokenAmount() + manageTokens.amount());
+            }
+            tokenRepository.save(userToken);
+        });
+        return ResponseEntity.ok().body("{\"message\": \"Tokens regenerated manually\"}");
+    }
+    
     
 }

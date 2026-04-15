@@ -22,7 +22,10 @@ import com.jayway.jsonpath.JsonPath;
 import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
 import com.example.tokenapijava.DTOs.ManageTokensRequest;
 import com.example.tokenapijava.Schemas.AppsSchema;
+import com.example.tokenapijava.Schemas.UserTokenId;
+import com.example.tokenapijava.Schemas.UserTokenSchema;
 import com.example.tokenapijava.SubscribedApplicationRepository;
+import com.example.tokenapijava.TokenRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -34,6 +37,9 @@ public class TokensTests {
 
     @Autowired
     SubscribedApplicationRepository applicationRepository;
+
+    @Autowired
+    TokenRepository tokenRepository;
     
     @Test
     @Sql(scripts = {"data/clean.sql",
@@ -258,6 +264,58 @@ public class TokensTests {
         ResponseEntity<Void> tokenAmountResponse2 = restTemplate
             .postForEntity("/api/tokens/userTest1/subtract", request2, Void.class);
         assertThat(tokenAmountResponse2.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldRegenerateTokenForAllUserOfApplication() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        ManageTokensRequest manageToken = new ManageTokensRequest(1L);
+        HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
+        ResponseEntity<String> tokenAmountResponse = restTemplate
+            .postForEntity("/api/tokens/regenerate", request, String.class);
+        assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        UserTokenSchema userTest1 = tokenRepository.findById(new UserTokenId("userTest1", "xxa")).orElseThrow();
+        UserTokenSchema userTest3 = tokenRepository.findById(new UserTokenId("userTest3", "xxa")).orElseThrow();
+        assertThat(userTest1.getTokenAmount()).isEqualTo(3+1);
+        assertThat(userTest3.getTokenAmount()).isEqualTo(13+1);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldNotRegenerateTokenIfMaxTokenAmountAlreadyReached() {
+        AppsSchema currentApp = applicationRepository.findByApiKey("xxb").orElseThrow();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxb");
+        ManageTokensRequest manageToken = new ManageTokensRequest(1L);
+        HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
+        ResponseEntity<String> tokenAmountResponse = restTemplate
+            .postForEntity("/api/tokens/regenerate", request, String.class);
+        assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", "xxb")).orElseThrow();
+        assertThat(userTest5.getTokenAmount()).isEqualTo(currentApp.getMaxTokenAmount());
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldRegenerateToMaxTokenAmountIfNewAmountExceedMaxTokenAmountForApplication() {
+        AppsSchema currentApp = applicationRepository.findByApiKey("xxb").orElseThrow();
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxb");
+        ManageTokensRequest manageToken = new ManageTokensRequest(45L);
+        HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
+        ResponseEntity<String> tokenAmountResponse = restTemplate
+            .postForEntity("/api/tokens/regenerate", request, String.class);
+        assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", "xxb")).orElseThrow();
+        assertThat(userTest5.getTokenAmount()).isEqualTo(currentApp.getMaxTokenAmount());
     }
     
 }
