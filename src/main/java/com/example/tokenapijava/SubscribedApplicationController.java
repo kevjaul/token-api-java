@@ -29,6 +29,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/apps")
+@Tag(name = "Applications", description="Gestion des applications")
 class SubscribedApplicationController {
 
     private final SubscribedApplicationRepository appsRepository;

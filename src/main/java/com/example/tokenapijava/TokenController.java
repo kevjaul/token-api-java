@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/tokens")
 @SecurityRequirement(name = "apiKeyAuth")
+@Tag(name = "Tokens", description = "Gestion des tokens")
 public class TokenController {
 
     private final TokenRepository tokenRepository;
@@ -76,7 +77,7 @@ public class TokenController {
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should add at least 1 token");
         }
-        else if (manageTokens.amount() == app.getMaxTokenAmount()){
+        else if (userToken.getTokenAmount() == app.getMaxTokenAmount()){
             return ResponseEntity.ok().build();
         }
         else if( manageTokens.amount() > app.getMaxTokenAmount() - userToken.getTokenAmount()){
@@ -89,5 +90,27 @@ public class TokenController {
         return ResponseEntity.ok().body("{\"message\": \"Tokens added\", \"currentTokenAmount\": " + userToken.getTokenAmount() + "}");
     }
     
-
+    @PostMapping("/{userId}/subtract")
+    @Operation(summary = "Enlève des tokens à un utilisateur.")
+    @Tag(name = "Tokens")
+    public ResponseEntity<?> subtractUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth) {
+        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        UserTokenId id = new UserTokenId(userId,app.getApiKey());
+        UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (manageTokens.amount() <= 0){
+            return ResponseEntity.badRequest().body("You should delete at least 1 token");
+        }
+        else if (userToken.getTokenAmount() == app.getMinTokenAmount()){
+            return ResponseEntity.ok().build();
+        }
+        else if( manageTokens.amount() > userToken.getTokenAmount() - app.getMinTokenAmount()){
+            userToken.setTokenAmount(app.getMinTokenAmount());
+            tokenRepository.save(userToken);
+            return ResponseEntity.ok().body("{\"message\": \"Reach min token amount for this user\", \"currentTokenAmount\": " + userToken.getTokenAmount() + "}");
+        } 
+        userToken.setTokenAmount(userToken.getTokenAmount() - manageTokens.amount());
+        tokenRepository.save(userToken);
+        return ResponseEntity.ok().body("{\"message\": \"Tokens subtracted\", \"currentTokenAmount\": " + userToken.getTokenAmount() + "}");
+    }
+    
 }

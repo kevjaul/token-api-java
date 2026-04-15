@@ -191,5 +191,73 @@ public class TokensTests {
             .postForEntity("/api/tokens/userTest1/add", request2, Void.class);
         assertThat(tokenAmountResponse2.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldSubtractTokenAmountForUser() {
+        ManageTokensRequest manageToken = new ManageTokensRequest(2L);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
+        ResponseEntity<String> tokenAmountResponse = restTemplate
+            .postForEntity("/api/tokens/userTest1/subtract", request, String.class);
+        assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        DocumentContext documentContext = JsonPath.parse(tokenAmountResponse.getBody());
+        Long tokenAmount = documentContext.read("$.currentTokenAmount", Long.class);
+        assertThat(tokenAmount).isEqualTo(1L);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldNotSubtractTokenAmountForNonExistingUser() {
+        ManageTokensRequest manageToken = new ManageTokensRequest(1L);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
+        ResponseEntity<Void> tokenAmountResponse = restTemplate
+            .exchange("/api/tokens/userTest2/subtract", HttpMethod.POST, request, Void.class);
+        assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldSetMinTokenAmountForUserIfTokenAmountExceeded() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        AppsSchema currentApp = applicationRepository.findByApiKey("xxa").orElseThrow();
+        ManageTokensRequest manageToken = new ManageTokensRequest(currentApp.getMaxTokenAmount() + 1L);
+        HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
+        ResponseEntity<String> tokenAmountResponse = restTemplate
+            .postForEntity("/api/tokens/userTest1/subtract", request, String.class);
+        assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        DocumentContext documentContext = JsonPath.parse(tokenAmountResponse.getBody());
+        Long tokenAmount = documentContext.read("$.currentTokenAmount", Long.class);
+        assertThat(tokenAmount).isEqualTo(currentApp.getMinTokenAmount());
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldNotSubtractIfTokenAmountIsNegativeOrZero() {
+        ManageTokensRequest manageToken = new ManageTokensRequest(-7L);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
+        ResponseEntity<Void> tokenAmountResponse = restTemplate
+            .postForEntity("/api/tokens/userTest1/subtract", request, Void.class);
+        assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        ManageTokensRequest manageToken2 = new ManageTokensRequest(0L);
+        HttpEntity<ManageTokensRequest> request2 = new HttpEntity<>(manageToken2, headers);
+        ResponseEntity<Void> tokenAmountResponse2 = restTemplate
+            .postForEntity("/api/tokens/userTest1/subtract", request2, Void.class);
+        assertThat(tokenAmountResponse2.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
     
 }
