@@ -1,0 +1,12 @@
+{
+    "Id": 1,
+    "name": "testApp",
+    "apiKey": "xxa",
+    "max_token_value": 15,
+    "min_token_value": 0,
+    "token_regeneration_time": {
+        "days": 1,
+        "hours": 12,
+        "mins": 0
+    }
+}
