@@ -11,12 +11,12 @@ Each application can manage its own users and token balances securely using an A
 * Spring Boot
 * Spring Security
 * Spring Data JPA
-* H2 / SQL Database
+* PostgreSQL / SQL Database
 * Swagger (OpenAPI)
 
 ---
 
-## ⚙️ Setup
+## ⚙️ Developer Setup
 
 ### 1. Clone the repository
 
@@ -27,10 +27,16 @@ cd token-api-java
 
 ---
 
-### 2. Run the application
+### 2. Create a PostgresSQL Docker container
 
 ```bash
-./gradlew bootRun
+docker run -d --name token-api-dev -e POSTGRES_DB=token_db -e POSTGRES_USER=appuser -e POSTGRES_PASSWORD=apppassword -p 5432:5432 postgres:16
+```
+
+### 3. Run the application in development mode
+
+```bash
+./gradlew bootDev
 ```
 
 API will be available at:
@@ -41,7 +47,7 @@ http://localhost:5001
 
 ---
 
-### 3. Swagger documentation
+### 4. Swagger documentation
 
 ```
 http://localhost:5001/swagger-ui/index.html
@@ -110,7 +116,6 @@ Tests include:
 
 * Webhooks for token updates
 * Rate limiting per application
-* Persistent database (PostgreSQL)
 * Schedule jobs for token auto-regeneration
 
 ---

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,6 +23,7 @@ import com.example.tokenapijava.Schemas.UserTokenId;
 import com.example.tokenapijava.Schemas.UserTokenSchema;
 
 @JsonTest
+@ActiveProfiles("test")
 class TokensJsonTests {
     @Autowired
     private JacksonTester<UserTokenSchema> json;
@@ -46,11 +48,11 @@ class TokensJsonTests {
         assertThat(json.write(userToken)).extractingJsonPathNumberValue("@.tokenAmount").isEqualTo(3);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode jsonNode = mapper.readTree(json.write(userToken).getJson());
-        assertThat(jsonNode.has("Id")).isTrue();
-        assertThat(jsonNode.get("Id").has("userId")).isTrue();
-        assertThat(jsonNode.get("Id").get("userId").asText()).isEqualTo("userTest1");
-        assertThat(jsonNode.get("Id").has("linkedApp")).isTrue();
-        assertThat(jsonNode.get("Id").get("linkedApp").asText()).isEqualTo("xxa");
+        assertThat(jsonNode.has("id")).isTrue();
+        assertThat(jsonNode.get("id").has("userId")).isTrue();
+        assertThat(jsonNode.get("id").get("userId").asText()).isEqualTo("userTest1");
+        assertThat(jsonNode.get("id").has("linkedApp")).isTrue();
+        assertThat(jsonNode.get("id").get("linkedApp").asText()).isEqualTo("xxa");
     }
 
     @Test

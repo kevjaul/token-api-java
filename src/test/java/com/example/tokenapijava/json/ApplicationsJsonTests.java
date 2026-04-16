@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,6 +19,7 @@ import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.Schemas.TokenRegenerationSchema;
 
 @JsonTest
+@ActiveProfiles("test")
 class ApplicationsJsonTests {
 
     @Autowired

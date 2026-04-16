@@ -2,6 +2,7 @@ package com.example.tokenapijava.Schemas;
 
 import jakarta.persistence.Access;
 import jakarta.persistence.AccessType;
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -20,9 +21,10 @@ import lombok.*;
 @Access(AccessType.FIELD)
 public class UserTokenSchema{
     @EmbeddedId
-    private UserTokenId Id;
+    private UserTokenId id;
     
     @Schema(defaultValue = "0")
+    @Column(name = "TOKEN_AMOUNT")
     private Long tokenAmount;
     
 }
