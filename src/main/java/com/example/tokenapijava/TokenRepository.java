@@ -9,4 +9,5 @@ import com.example.tokenapijava.Schemas.UserTokenSchema;
 
 public interface TokenRepository extends JpaRepository<UserTokenSchema, UserTokenId> {
     public List<UserTokenSchema> findAllById_LinkedApp(String apiKey);
+    public UserTokenSchema findById_LinkedAppAndId_UserId(String apiKey, String userId);
 }

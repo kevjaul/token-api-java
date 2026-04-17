@@ -2,6 +2,7 @@ package com.example.tokenapijava;
 
 import java.net.URI;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
 import com.example.tokenapijava.DTOs.ManageTokensRequest;
 import com.example.tokenapijava.Schemas.AppsSchema;
@@ -23,7 +25,7 @@ import com.example.tokenapijava.Schemas.UserTokenSchema;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
- 
+
 @RestController
 @RequestMapping("/api/tokens")
 @SecurityRequirement(name = "apiKeyAuth")
@@ -32,8 +34,12 @@ public class TokenController {
 
     private final TokenRepository tokenRepository;
 
-    private TokenController(TokenRepository tokenRepository) {
+    @Autowired
+    private TokenService tokenService;
+
+    private TokenController(TokenRepository tokenRepository, TokenService tokenService) {
         this.tokenRepository = tokenRepository;
+        this.tokenService = tokenService;
     }
     
     @PostMapping("/register")
@@ -121,19 +127,7 @@ public class TokenController {
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should add at least 1 token");
         }
-        Long appMaxTokenAmount = app.getMaxTokenAmount();
-        tokenRepository.findAllById_LinkedApp(app.getApiKey()).forEach(userToken -> {
-            if (userToken.getTokenAmount() == appMaxTokenAmount){
-                return;
-            }
-            else if( manageTokens.amount() > appMaxTokenAmount - userToken.getTokenAmount()){
-                userToken.setTokenAmount(appMaxTokenAmount);
-            }
-            else{
-                userToken.setTokenAmount(userToken.getTokenAmount() + manageTokens.amount());
-            }
-            tokenRepository.save(userToken);
-        });
+        tokenService.regenerateForApp(app,manageTokens.amount());
         return ResponseEntity.ok().body("{\"message\": \"Tokens regenerated manually\"}");
     }
     

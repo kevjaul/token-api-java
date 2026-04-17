@@ -51,12 +51,12 @@ public class ApplicationsTests {
         
         DocumentContext documentContext = JsonPath.parse(allAppsResponse.getBody());
         int appsCount = documentContext.read("$.length()");
-        assertThat(appsCount).isEqualTo(2);
+        assertThat(appsCount).isEqualTo(3);
         
         JSONArray appsNames = documentContext.read("$..name");
-        assertThat(appsNames).containsExactlyInAnyOrder("testApp","testApp2");
+        assertThat(appsNames).containsExactlyInAnyOrder("testApp","testApp2","testAppRegen");
 
         JSONArray maxTokenAmounts = documentContext.read("$..max_token_value");
-        assertThat(maxTokenAmounts).containsExactlyInAnyOrder(15,300);
+        assertThat(maxTokenAmounts).containsExactlyInAnyOrder(15,300,300);
     }
 }

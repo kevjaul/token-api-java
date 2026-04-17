@@ -1,5 +1,7 @@
 package com.example.tokenapijava;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -17,9 +19,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 
+import org.quartz.SchedulerException;
+
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 
+import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
 import com.example.tokenapijava.DTOs.ManageTokensRequest;
 import com.example.tokenapijava.Schemas.AppsSchema;
@@ -42,6 +47,9 @@ public class TokensTests {
 
     @Autowired
     TokenRepository tokenRepository;
+
+    @Autowired
+    TokenService tokenService;
     
     @Test
     @Sql(scripts = {"data/clean.sql",
@@ -318,6 +326,23 @@ public class TokensTests {
         assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", "xxb")).orElseThrow();
         assertThat(userTest5.getTokenAmount()).isEqualTo(currentApp.getMaxTokenAmount());
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    void shouldRegenerateTokensFromRealScheduling() throws SchedulerException, InterruptedException {
+        String appApiKey = "apkiKeyForRegenTests";
+        UserTokenSchema userToken = new UserTokenSchema(new UserTokenId("tempUser", appApiKey), 0L);
+        tokenRepository.save(userToken);
+
+        tokenService.scheduleAppJob(appApiKey, 3, TimeUnit.SECONDS);
+
+        Thread.sleep(10000);
+
+        UserTokenSchema updatedUser = tokenRepository.findById_LinkedAppAndId_UserId(appApiKey, "tempUser");
+        assertThat(updatedUser.getTokenAmount()).isGreaterThan(0L);
+
     }
     
 }

@@ -14,9 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import com.example.tokenapijava.Schemas.AppsSchema;
-import com.example.tokenapijava.DTOs.CreateApplicationRequest;
+import org.quartz.SchedulerException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,15 +25,22 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
+import com.example.tokenapijava.Schemas.AppsSchema;
+import com.example.tokenapijava.Conf.TokenService;
+import com.example.tokenapijava.DTOs.CreateApplicationRequest;
+
 @RestController
 @RequestMapping("/api/apps")
 @Tag(name = "Applications", description="Gestion des applications")
 class SubscribedApplicationController {
 
+    private final TokenService tokenService;
+
     private final SubscribedApplicationRepository appsRepository;
 
-    public SubscribedApplicationController(SubscribedApplicationRepository appsRepository) {
+    public SubscribedApplicationController(SubscribedApplicationRepository appsRepository, TokenService tokenService) {
         this.appsRepository = appsRepository;
+        this.tokenService = tokenService;
     }
 
     @PostMapping("/register")
@@ -56,6 +61,14 @@ class SubscribedApplicationController {
             .path("/api/apps/{id}")
             .buildAndExpand(savedApp.getId())
             .toUri();
+        long intervalMinutes = savedApp.getTokenRegenerationTime().getDays() * 24 * 60
+            + savedApp.getTokenRegenerationTime().getHours() * 60
+            + savedApp.getTokenRegenerationTime().getMins();
+        try{
+            tokenService.scheduleAppJob(savedApp.getApiKey(), intervalMinutes);
+        } catch (SchedulerException e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
         return ResponseEntity.created(locationOfNewApp).body("{\"api_key\": \"" + savedApp.getApiKey() + "\"}");
     }
 
