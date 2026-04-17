@@ -10,6 +10,7 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTe
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.example.tokenapijava.DTOs.CreateApplicationRequest;
 import com.example.tokenapijava.Schemas.TokenRegenerationSchema;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
 @AutoConfigureRestTestClient 
+@ActiveProfiles("test")
 public class ApplicationsTests {
     @Autowired
     TestRestTemplate restTemplate;
