@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.isNull;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
@@ -343,6 +344,47 @@ public class TokensTests {
         UserTokenSchema updatedUser = tokenRepository.findById_LinkedAppAndId_UserId(appApiKey, "tempUser");
         assertThat(updatedUser.getTokenAmount()).isGreaterThan(0L);
 
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldDeleteTheUser(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<Void> deleteResponse = restTemplate
+            .exchange("/api/tokens/userTest1", HttpMethod.DELETE, request, Void.class);
+        assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(tokenRepository.findById_LinkedAppAndId_UserId("xxa", "userTest1")).isNull();
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void canDeleteNotExistingUser(){ //Don't give hint to potential hacker
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<Void> deleteResponse = restTemplate
+            .exchange("/api/tokens/randomName1", HttpMethod.DELETE, request, Void.class);
+        assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldDeleteAllApplicationUsers(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<Void> deleteResponse = restTemplate
+            .exchange("/api/tokens/", HttpMethod.DELETE, request, Void.class);
+        assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(tokenRepository.findAllById_LinkedApp("xxa")).isEmpty();
     }
     
 }

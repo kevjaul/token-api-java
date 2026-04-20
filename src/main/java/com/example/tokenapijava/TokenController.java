@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -129,6 +130,28 @@ public class TokenController {
         }
         tokenService.regenerateForApp(app,manageTokens.amount());
         return ResponseEntity.ok().body("{\"message\": \"Tokens regenerated manually\"}");
+    }
+
+    @DeleteMapping("/{userId}")
+    @Operation(summary = "Supprime un utilisateur.")
+    @Tag(name = "Tokens")
+    public ResponseEntity<?> deleteUserTokens(@PathVariable String userId, Authentication auth) {
+        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        UserTokenSchema userToken = tokenRepository.findById_LinkedAppAndId_UserId(app.getApiKey(), userId);
+        if(userToken != null){
+            tokenRepository.delete(userToken);
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/")
+    @Operation(summary = "Supprime tous les utilisateurs d'une application.")
+    @Tag(name = "Tokens")
+    public ResponseEntity<?> deleteAllUsersTokens(Authentication auth) {
+        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        tokenRepository.findAllById_LinkedApp(app.getApiKey()).forEach(userToken -> 
+            tokenRepository.delete(userToken));
+        return ResponseEntity.noContent().build();
     }
     
     
