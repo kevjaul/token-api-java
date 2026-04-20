@@ -54,6 +54,7 @@ public class TokenService {
         JobDetail job = JobBuilder.newJob(TokenRegenerationJob.class)
             .withIdentity("regen-" + appId)
             .usingJobData("appId", appId)
+            .storeDurably()
             .build();
         SimpleScheduleBuilder schedule = null;
         switch(unit){
@@ -72,11 +73,17 @@ public class TokenService {
         
         Trigger trigger = TriggerBuilder.newTrigger()
             .withIdentity("regen-trigger-" + appId)
+            .forJob("regen-" + appId)
             .withSchedule(schedule)
             .startNow()
             .build();
 
-        scheduler.scheduleJob(job, trigger);
+        if(scheduler.checkExists(JobKey.jobKey("regen-" + appId))){
+            scheduler.rescheduleJob(TriggerKey.triggerKey("regen-trigger-" + appId), trigger);
+        } else {
+            scheduler.scheduleJob(job, trigger);    
+        }
+        System.out.println("Job created for " + appId + " with job key regen-" + appId);
     }
 
 }
