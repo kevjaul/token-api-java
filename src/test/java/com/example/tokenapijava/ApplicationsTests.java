@@ -1,7 +1,15 @@
 package com.example.tokenapijava;
 
 import org.junit.jupiter.api.Test;
+
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
@@ -12,8 +20,11 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationRequest;
 import com.example.tokenapijava.Schemas.TokenRegenerationSchema;
+import com.example.tokenapijava.Schemas.UserTokenId;
+import com.example.tokenapijava.Schemas.UserTokenSchema;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -28,6 +39,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ApplicationsTests {
     @Autowired
     TestRestTemplate restTemplate;
+
+    @Autowired
+    TokenRepository tokenRepository;
+
+    @Autowired
+    SubscribedApplicationRepository applicationRepository;
+
+    @Autowired
+    Scheduler scheduler;
+
+    @Autowired
+    TokenService tokenService;
 
     @Test
     @DirtiesContext
@@ -51,12 +74,35 @@ public class ApplicationsTests {
         
         DocumentContext documentContext = JsonPath.parse(allAppsResponse.getBody());
         int appsCount = documentContext.read("$.length()");
-        assertThat(appsCount).isEqualTo(2);
+        assertThat(appsCount).isEqualTo(3);
         
         JSONArray appsNames = documentContext.read("$..name");
-        assertThat(appsNames).containsExactlyInAnyOrder("testApp","testApp2");
+        assertThat(appsNames).containsExactlyInAnyOrder("testApp","testApp2","testAppRegen");
 
         JSONArray maxTokenAmounts = documentContext.read("$..max_token_value");
-        assertThat(maxTokenAmounts).containsExactlyInAnyOrder(15,300);
+        assertThat(maxTokenAmounts).containsExactlyInAnyOrder(15,300,300);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldDeleteAnApplicationAndAllReferencees() throws SchedulerException{
+        String appApiKey = "apkiKeyForRegenTests";
+        UserTokenSchema userToken = new UserTokenSchema(new UserTokenId("tempUser", appApiKey), 0L);
+        tokenRepository.save(userToken);
+        tokenService.scheduleAppJob(appApiKey, 30);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", appApiKey);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        // Check that the job has successfully been scheduled 
+        assertThat(scheduler.checkExists(JobKey.jobKey("regen-" + appApiKey))).isTrue();
+        ResponseEntity<Void> deleteApplicationResponse = restTemplate
+            .exchange("/api/apps/myApp", HttpMethod.DELETE, request, Void.class);
+        assertThat(deleteApplicationResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        // No more DB entries
+        assertThat(tokenRepository.findAllById_LinkedApp(appApiKey)).isEmpty();
+        assertThat(applicationRepository.findByApiKey(appApiKey)).isEmpty();
+        // No more job in scheduler
+        assertThat(scheduler.checkExists(JobKey.jobKey("regen-" + appApiKey))).isFalse();
     }
 }

@@ -1,10 +1,13 @@
 package com.example.tokenapijava;
 
+import jakarta.transaction.Transactional;
+
 import java.net.URI;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
 import com.example.tokenapijava.DTOs.ManageTokensRequest;
 import com.example.tokenapijava.Schemas.AppsSchema;
@@ -23,23 +27,26 @@ import com.example.tokenapijava.Schemas.UserTokenSchema;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
- 
+
 @RestController
 @RequestMapping("/api/tokens")
 @SecurityRequirement(name = "apiKeyAuth")
 @Tag(name = "Tokens", description = "Gestion des tokens")
 public class TokenController {
 
-    private final TokenRepository tokenRepository;
+    private TokenRepository tokenRepository;
 
-    private TokenController(TokenRepository tokenRepository) {
+    private TokenService tokenService;
+
+    public TokenController(TokenRepository tokenRepository, TokenService tokenService) {
         this.tokenRepository = tokenRepository;
+        this.tokenService = tokenService;
     }
     
     @PostMapping("/register")
     @Operation(summary = "Enregistre un nouvel utilisateur avec un nombre de tokens initial.")
     @Tag(name = "Tokens")
-    private ResponseEntity<?> createAnApplicationUser(@RequestBody CreateApplicationUserRequest applicationUser, UriComponentsBuilder Ucb,Authentication auth ) {
+    public ResponseEntity<?> createAnApplicationUser(@RequestBody CreateApplicationUserRequest applicationUser, UriComponentsBuilder Ucb,Authentication auth ) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
         UserTokenId userId = new UserTokenId(applicationUser.userId(),app.getApiKey());
         if(tokenRepository.existsById(userId)){
@@ -121,20 +128,30 @@ public class TokenController {
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should add at least 1 token");
         }
-        Long appMaxTokenAmount = app.getMaxTokenAmount();
-        tokenRepository.findAllById_LinkedApp(app.getApiKey()).forEach(userToken -> {
-            if (userToken.getTokenAmount() == appMaxTokenAmount){
-                return;
-            }
-            else if( manageTokens.amount() > appMaxTokenAmount - userToken.getTokenAmount()){
-                userToken.setTokenAmount(appMaxTokenAmount);
-            }
-            else{
-                userToken.setTokenAmount(userToken.getTokenAmount() + manageTokens.amount());
-            }
-            tokenRepository.save(userToken);
-        });
+        tokenService.regenerateForApp(app,manageTokens.amount());
         return ResponseEntity.ok().body("{\"message\": \"Tokens regenerated manually\"}");
+    }
+
+    @DeleteMapping("/{userId}")
+    @Operation(summary = "Supprime un utilisateur.")
+    @Tag(name = "Tokens")
+    public ResponseEntity<?> deleteUserTokens(@PathVariable String userId, Authentication auth) {
+        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        UserTokenSchema userToken = tokenRepository.findById_LinkedAppAndId_UserId(app.getApiKey(), userId);
+        if(userToken != null){
+            tokenRepository.delete(userToken);
+        }
+        return ResponseEntity.noContent().build();
+    }
+
+    @Transactional
+    @DeleteMapping("/")
+    @Operation(summary = "Supprime tous les utilisateurs d'une application.")
+    @Tag(name = "Tokens")
+    public ResponseEntity<?> deleteAllUsersTokens(Authentication auth) {
+        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        tokenRepository.deleteAllById_LinkedApp(app.getApiKey());
+        return ResponseEntity.noContent().build();
     }
     
     
