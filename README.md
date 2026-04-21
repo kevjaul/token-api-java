@@ -13,6 +13,7 @@ Each application can manage its own users and token balances securely using an A
 * Spring Data JPA
 * PostgreSQL / SQL Database
 * Swagger (OpenAPI)
+* Quartz Scheduler
 
 ---
 
@@ -65,7 +66,7 @@ All `/api/tokens/**` routes require:
 X-Api-Key: your-api-key
 ```
 
-(Generated from `/api/applications/register` route)
+(Generated from `/api/apps/register` route)
 
 ---
 
@@ -82,7 +83,7 @@ A background job (scheduler) can automatically increment tokens.
 Optional manual trigger:
 
 ```http
-POST /api/tokens/regeneration
+POST /api/tokens/regenerate
 ```
 
 ---
@@ -114,9 +115,15 @@ Tests include:
 
 ## 📌 Future Improvements
 
-* Webhooks for token updates
+* Webhooks for token updates and enhance visibility:
+  * Future route: /api/tokens/list : To consult user application list.
+  * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
+  * Prometheus ready endpoint
 * Rate limiting per application
-* Schedule jobs for token auto-regeneration
+* API remote hosting
+* CI/CD with test pipeline, tags, and release note
+* Only saved hashed apiKey, and key expiration
+* (Collection Postman ?)
 
 ---
 
