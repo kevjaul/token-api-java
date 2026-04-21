@@ -50,10 +50,10 @@ public class SecurityConfig {
     @Order(1)
     SecurityFilterChain apiKeyFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/api/tokens/**")
+            .securityMatcher( "/api/tokens/**","/api/apps/myApp")
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(request -> request
-                .requestMatchers("/api/tokens/**")
+                .requestMatchers("/api/tokens/**","/api/apps/myApp")
                 .authenticated())
             .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

@@ -1,5 +1,12 @@
 package com.example.tokenapijava;
 
+import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
+
+import java.net.URI;
+import java.util.UUID;
+import java.util.List;
+
 import org.springdoc.core.annotations.ParameterObject;
 
 import org.springframework.data.domain.Page;
@@ -8,22 +15,22 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
-import java.net.URI;
-import java.util.UUID;
-import java.util.List;
-
-import jakarta.validation.Valid;
 
 import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.Conf.TokenService;
@@ -32,21 +39,27 @@ import com.example.tokenapijava.DTOs.CreateApplicationRequest;
 @RestController
 @RequestMapping("/api/apps")
 @Tag(name = "Applications", description="Gestion des applications")
-class SubscribedApplicationController {
+public class SubscribedApplicationController {
 
     private final TokenService tokenService;
 
+    private TokenRepository tokenRepository;
+
     private final SubscribedApplicationRepository appsRepository;
 
-    public SubscribedApplicationController(SubscribedApplicationRepository appsRepository, TokenService tokenService) {
+    private Scheduler scheduler;
+
+    public SubscribedApplicationController(SubscribedApplicationRepository appsRepository, TokenService tokenService, TokenRepository tokenRepository,Scheduler scheduler) {
         this.appsRepository = appsRepository;
         this.tokenService = tokenService;
+        this.tokenRepository = tokenRepository;
+        this.scheduler = scheduler;
     }
 
     @PostMapping("/register")
     @Operation(summary = "Enregistre une nouvelle application et génère une clé API")
     @Tag(name = "Applications")
-    public ResponseEntity<?> registerANewApplication(@Valid @RequestBody CreateApplicationRequest application, UriComponentsBuilder Ucb) {
+    public ResponseEntity<?> registerANewApplication(@Valid @RequestBody CreateApplicationRequest application, UriComponentsBuilder Ucb) throws SchedulerException {
         if (application.appName() == null || application.appName().isBlank() || application.appName().equalsIgnoreCase("string") ) {
             return ResponseEntity.badRequest().build();
         }
@@ -64,11 +77,7 @@ class SubscribedApplicationController {
         long intervalMinutes = savedApp.getTokenRegenerationTime().getDays() * 24 * 60
             + savedApp.getTokenRegenerationTime().getHours() * 60
             + savedApp.getTokenRegenerationTime().getMins();
-        try{
-            tokenService.scheduleAppJob(savedApp.getApiKey(), intervalMinutes);
-        } catch (SchedulerException e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        tokenService.scheduleAppJob(savedApp.getApiKey(), intervalMinutes);
         return ResponseEntity.created(locationOfNewApp).body("{\"api_key\": \"" + savedApp.getApiKey() + "\"}");
     }
 
@@ -84,4 +93,18 @@ class SubscribedApplicationController {
         return ResponseEntity.ok(allApps.getContent());
     }
     
+    @Transactional
+    @DeleteMapping("/myApp")
+    @Operation(summary = "Supprime l'application utilisant la clé API.")
+    @Tag(name = "Applications")
+    @SecurityRequirement(name = "apiKeyAuth")
+    public ResponseEntity<?> deleteAnApplications(Authentication auth) throws SchedulerException{
+        AppsSchema currentLoggedApp = (AppsSchema) auth.getPrincipal();
+        tokenRepository.deleteAllById_LinkedApp(currentLoggedApp.getApiKey());
+        if(scheduler.checkExists(JobKey.jobKey("regen-" + currentLoggedApp.getApiKey()))){
+            tokenService.deleteAppSchedule(currentLoggedApp.getApiKey());
+        }
+        appsRepository.delete(currentLoggedApp);
+        return ResponseEntity.noContent().build();
+    }
 }

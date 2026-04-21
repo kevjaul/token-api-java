@@ -1,8 +1,9 @@
 package com.example.tokenapijava;
 
+import jakarta.transaction.Transactional;
+
 import java.net.URI;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,12 +34,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @Tag(name = "Tokens", description = "Gestion des tokens")
 public class TokenController {
 
-    private final TokenRepository tokenRepository;
+    private TokenRepository tokenRepository;
 
-    @Autowired
     private TokenService tokenService;
 
-    private TokenController(TokenRepository tokenRepository, TokenService tokenService) {
+    public TokenController(TokenRepository tokenRepository, TokenService tokenService) {
         this.tokenRepository = tokenRepository;
         this.tokenService = tokenService;
     }
@@ -46,7 +46,7 @@ public class TokenController {
     @PostMapping("/register")
     @Operation(summary = "Enregistre un nouvel utilisateur avec un nombre de tokens initial.")
     @Tag(name = "Tokens")
-    private ResponseEntity<?> createAnApplicationUser(@RequestBody CreateApplicationUserRequest applicationUser, UriComponentsBuilder Ucb,Authentication auth ) {
+    public ResponseEntity<?> createAnApplicationUser(@RequestBody CreateApplicationUserRequest applicationUser, UriComponentsBuilder Ucb,Authentication auth ) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
         UserTokenId userId = new UserTokenId(applicationUser.userId(),app.getApiKey());
         if(tokenRepository.existsById(userId)){
@@ -144,13 +144,13 @@ public class TokenController {
         return ResponseEntity.noContent().build();
     }
 
+    @Transactional
     @DeleteMapping("/")
     @Operation(summary = "Supprime tous les utilisateurs d'une application.")
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteAllUsersTokens(Authentication auth) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        tokenRepository.findAllById_LinkedApp(app.getApiKey()).forEach(userToken -> 
-            tokenRepository.delete(userToken));
+        tokenRepository.deleteAllById_LinkedApp(app.getApiKey());
         return ResponseEntity.noContent().build();
     }
     

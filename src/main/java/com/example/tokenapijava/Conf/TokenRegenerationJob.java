@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 
-import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.SubscribedApplicationRepository;
 
@@ -18,11 +17,6 @@ public class TokenRegenerationJob implements Job{
 
     @Autowired
     private SubscribedApplicationRepository appsRepository;
-
-    public TokenRegenerationJob(TokenService tokenService, SubscribedApplicationRepository appsRepository) {
-        this.tokenService = tokenService;
-        this.appsRepository = appsRepository;
-    }
 
     @Override
     public void execute(JobExecutionContext context) {

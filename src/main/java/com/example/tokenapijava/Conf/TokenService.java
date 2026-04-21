@@ -2,9 +2,6 @@ package com.example.tokenapijava.Conf;
 
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -15,17 +12,22 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 
+import org.springframework.stereotype.Service;
+
 import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.TokenRepository;
 
 @Service
 public class TokenService {
 
-    @Autowired
     private Scheduler scheduler;
 
-    @Autowired
     private TokenRepository tokenRepository;
+
+    public TokenService(TokenRepository tokenRepository, Scheduler scheduler) {
+        this.tokenRepository = tokenRepository;
+        this.scheduler = scheduler;
+    }
 
     public void regenerateForApp(AppsSchema app, Long tokenToAdd) {
         Long appMaxTokenAmount = app.getMaxTokenAmount();
@@ -50,12 +52,12 @@ public class TokenService {
     }
 
     public void scheduleAppJob(String appId, long interval, TimeUnit unit) throws SchedulerException {
-
         JobDetail job = JobBuilder.newJob(TokenRegenerationJob.class)
             .withIdentity("regen-" + appId)
             .usingJobData("appId", appId)
             .storeDurably()
             .build();
+
         SimpleScheduleBuilder schedule = null;
         switch(unit){
             case SECONDS:
@@ -86,4 +88,9 @@ public class TokenService {
         System.out.println("Job created for " + appId + " with job key regen-" + appId);
     }
 
+    public void deleteAppSchedule(String appId) throws SchedulerException {
+        JobKey jobKey = JobKey.jobKey("regen-" + appId);
+        scheduler.deleteJob(jobKey);
+        System.out.println("Job deleted for " + appId + " with job key regen-" + appId);   
+    }
 }
