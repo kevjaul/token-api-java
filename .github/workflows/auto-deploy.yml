@@ -1,0 +1,51 @@
+name: CI/CD - Build & Deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '19'
+
+      - name: Compute version
+        id: version
+        run: |
+            TAG=${GITHUB_REF#refs/tags/v}
+            echo "BASE_VERSION=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Compute patch version
+        run: |
+            PATCH=$(git rev-list v${{ steps.version.outputs.BASE_VERSION }}..HEAD --count)
+            echo "VERSION=${{ steps.version.outputs.BASE_VERSION }}.$PATCH" >> $GITHUB_ENV
+            echo "Deploy version $VERSION"
+
+      - name: Build and rename JAR
+        run: |
+            chmod +x ./gradlew
+            ./gradlew clean build -x test
+            cp build/libs/*.jar application.jar
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: ${{ secrets.EB_APPLICATION_NAME }}
+          environment_name: ${{ secrets.EB_ENVIRONMENT_NAME }}
+          region: ${{ secrets.AWS_REGION }}
+          version_label: ${{ env.VERSION }}
+          deployment_package: application.jar
