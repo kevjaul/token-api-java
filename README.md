@@ -120,7 +120,6 @@ Tests include:
   * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
   * Prometheus ready endpoint
 * Rate limiting per application
-* API remote hosting
 * CI/CD with test pipeline, tags, and release note
 * Only saved hashed apiKey, and key expiration
 * (Collection Postman ?)
