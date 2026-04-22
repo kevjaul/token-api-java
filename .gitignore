@@ -38,5 +38,4 @@ out/
 
 
 ### Secrets (sensible) ###
-src/main/resources/application.properties
 application.yml
