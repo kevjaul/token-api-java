@@ -23,4 +23,6 @@ jobs:
                 distribution: 'corretto'
 
             - name: Run tests
-              run: ./gradlew test
+              run: |
+                chmod +x ./gradlew
+                ./gradlew test
