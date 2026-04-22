@@ -36,8 +36,8 @@ jobs:
       - name: Build and rename JAR
         run: |
             chmod +x ./gradlew
-            ./gradlew clean build -x test
-            cp build/libs/*.jar application.jar
+            ./gradlew clean bootJar -x test
+            cp build/libs/app.jar application.jar
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21

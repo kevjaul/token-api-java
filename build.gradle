@@ -80,3 +80,11 @@ test {
         showStandardStreams = false //Verbose mode
     }
 }
+
+bootJar {
+    archiveFileName = 'app.jar'
+}
+
+jar {
+    enabled = false
+}
