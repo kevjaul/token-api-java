@@ -96,6 +96,21 @@ POST /api/tokens/regenerate
 
 ---
 
+## 🛡️ Rate limiting
+
+Rate limiting is currently in-memory (Caffeine)
+State isn't database persistent but is automatically reset on application restart.
+
+In a production  or a more professionnal environment, please consider Redis-backed Bucket4J.
+
+Rate Limiting global :
+  * 20 requests GET / POST / PUT a day
+  * 5 requests DELETE a day
+  * Use of Token Bucket strategy with continuous refill (1d)
+  * Limitation by API Key use
+
+---
+
 ## 🧪 Testing
 
 Run tests with:
@@ -119,9 +134,8 @@ Tests include:
   * Future route: /api/tokens/list : To consult user application list.
   * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
   * Prometheus ready endpoint
-* Rate limiting per application
-* CI/CD with test pipeline, tags, and release note
-* Only saved hashed apiKey, and key expiration
+* CI/CD release note
+* Only saved hashed apiKey
 * (Collection Postman ?)
 
 ---
