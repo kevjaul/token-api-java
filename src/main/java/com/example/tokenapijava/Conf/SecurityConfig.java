@@ -25,8 +25,11 @@ public class SecurityConfig {
 
     private final ApiKeyFilter apiKeyFilter;
 
-    public SecurityConfig(ApiKeyFilter apiKeyFilter) {
+    private final RateLimitFilter rateLimitFilter;
+
+    public SecurityConfig(ApiKeyFilter apiKeyFilter, RateLimitFilter rateLimitFilter) {
         this.apiKeyFilter = apiKeyFilter;
+        this.rateLimitFilter = rateLimitFilter;
     }
 
     @Bean
@@ -42,7 +45,16 @@ public class SecurityConfig {
 
             .info(new Info()
                 .title("Token API")
-                .version("1.0.0")
+                .version("1.0.3")
+                .description("""
+                    API de gestion de tokens. (DEMONSTRATION)
+
+                    Rate Limiting global :
+                        - 20 requêtes GET / POST / PUT par jour
+                        - 5 requêtes DELETE par jour
+                        - Stratégie de limitation par Token Bucket avec fenêtre glissante (1j)
+                        - Limitation par API Key
+                """)
             );
     }
 
@@ -55,7 +67,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(request -> request
                 .requestMatchers("/api/tokens/**","/api/apps/myApp")
                 .authenticated())
-            .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(rateLimitFilter, ApiKeyFilter.class);
         return http.build();
     }
     @Bean
