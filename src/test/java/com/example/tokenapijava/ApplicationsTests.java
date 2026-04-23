@@ -1,5 +1,6 @@
 package com.example.tokenapijava;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.quartz.JobKey;
@@ -20,6 +21,7 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.example.tokenapijava.Conf.RateLimitService;
 import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationRequest;
 import com.example.tokenapijava.Schemas.TokenRegenerationSchema;
@@ -52,6 +54,14 @@ public class ApplicationsTests {
     @Autowired
     TokenService tokenService;
 
+    @Autowired
+    RateLimitService rateLimitService;
+
+    @BeforeEach
+    void setUp() {
+        rateLimitService.clearAll();
+    }
+    
     @Test
     @DirtiesContext
     void shouldCreateANewApplication() {

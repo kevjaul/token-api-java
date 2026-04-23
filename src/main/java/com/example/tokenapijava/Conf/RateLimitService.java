@@ -51,4 +51,8 @@ public class RateLimitService {
             .addLimit(limit)
             .build();
     }
+
+    public void clearAll(){
+        cache.invalidateAll();
+    }
 }
