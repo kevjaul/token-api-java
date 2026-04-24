@@ -2,6 +2,7 @@ package com.example.tokenapijava;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -24,15 +25,13 @@ import org.quartz.SchedulerException;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-
+import com.example.tokenapijava.Conf.RateLimitService;
 import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
 import com.example.tokenapijava.DTOs.ManageTokensRequest;
 import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.Schemas.UserTokenId;
 import com.example.tokenapijava.Schemas.UserTokenSchema;
-import com.example.tokenapijava.SubscribedApplicationRepository;
-import com.example.tokenapijava.TokenRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -51,6 +50,14 @@ public class TokensTests {
 
     @Autowired
     TokenService tokenService;
+
+    @Autowired
+    RateLimitService rateLimitService;
+
+    @BeforeEach
+    void setUp() {
+        rateLimitService.clearAll();
+    }
     
     @Test
     @Sql(scripts = {"data/clean.sql",
