@@ -25,6 +25,7 @@ import org.quartz.SchedulerException;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import com.example.tokenapijava.Conf.HashUtil;
 import com.example.tokenapijava.Conf.RateLimitService;
 import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
@@ -184,9 +185,10 @@ public class TokensTests {
         "data/applicationsTestDatas.sql",
         "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldSetMaxTokenAmountForUserIfTokenAmountExceeded() {
+        String apiKey = "xxa";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Api-Key", "xxa");
-        AppsSchema currentApp = applicationRepository.findByApiKey("xxa").orElseThrow();
+        headers.set("X-Api-Key", apiKey);
+        AppsSchema currentApp = applicationRepository.findByHashedApiKey(HashUtil.sha256(apiKey)).orElseThrow();
         ManageTokensRequest manageToken = new ManageTokensRequest(currentApp.getMaxTokenAmount() - 1L);
         HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
         ResponseEntity<String> tokenAmountResponse = restTemplate
@@ -252,9 +254,10 @@ public class TokensTests {
         "data/applicationsTestDatas.sql",
         "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldSetMinTokenAmountForUserIfTokenAmountExceeded() {
+        String apiKey = "xxa";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Api-Key", "xxa");
-        AppsSchema currentApp = applicationRepository.findByApiKey("xxa").orElseThrow();
+        headers.set("X-Api-Key", apiKey);
+        AppsSchema currentApp = applicationRepository.findByHashedApiKey(HashUtil.sha256(apiKey)).orElseThrow();
         ManageTokensRequest manageToken = new ManageTokensRequest(currentApp.getMaxTokenAmount() + 1L);
         HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
         ResponseEntity<String> tokenAmountResponse = restTemplate
@@ -289,15 +292,17 @@ public class TokensTests {
         "data/applicationsTestDatas.sql",
         "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldRegenerateTokenForAllUserOfApplication() {
+        String apiKey = "xxa";
+        String hashedApiKey = HashUtil.sha256(apiKey);
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Api-Key", "xxa");
+        headers.set("X-Api-Key", apiKey);
         ManageTokensRequest manageToken = new ManageTokensRequest(1L);
         HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
         ResponseEntity<String> tokenAmountResponse = restTemplate
             .postForEntity("/api/tokens/regenerate", request, String.class);
         assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        UserTokenSchema userTest1 = tokenRepository.findById(new UserTokenId("userTest1", "xxa")).orElseThrow();
-        UserTokenSchema userTest3 = tokenRepository.findById(new UserTokenId("userTest3", "xxa")).orElseThrow();
+        UserTokenSchema userTest1 = tokenRepository.findById(new UserTokenId("userTest1", hashedApiKey)).orElseThrow();
+        UserTokenSchema userTest3 = tokenRepository.findById(new UserTokenId("userTest3", hashedApiKey)).orElseThrow();
         assertThat(userTest1.getTokenAmount()).isEqualTo(3+1);
         assertThat(userTest3.getTokenAmount()).isEqualTo(13+1);
     }
@@ -307,15 +312,17 @@ public class TokensTests {
         "data/applicationsTestDatas.sql",
         "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldNotRegenerateTokenIfMaxTokenAmountAlreadyReached() {
-        AppsSchema currentApp = applicationRepository.findByApiKey("xxb").orElseThrow();
+        String apiKey = "xxb";
+        String hashedApiKey = HashUtil.sha256(apiKey);
+        AppsSchema currentApp = applicationRepository.findByHashedApiKey(hashedApiKey).orElseThrow();
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Api-Key", "xxb");
+        headers.set("X-Api-Key", apiKey);
         ManageTokensRequest manageToken = new ManageTokensRequest(1L);
         HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
         ResponseEntity<String> tokenAmountResponse = restTemplate
             .postForEntity("/api/tokens/regenerate", request, String.class);
         assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", "xxb")).orElseThrow();
+        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", hashedApiKey)).orElseThrow();
         assertThat(userTest5.getTokenAmount()).isEqualTo(currentApp.getMaxTokenAmount());
     }
 
@@ -324,15 +331,17 @@ public class TokensTests {
         "data/applicationsTestDatas.sql",
         "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldRegenerateToMaxTokenAmountIfNewAmountExceedMaxTokenAmountForApplication() {
-        AppsSchema currentApp = applicationRepository.findByApiKey("xxb").orElseThrow();
+        String apiKey = "xxb";
+        String hashedApiKey = HashUtil.sha256(apiKey);
+        AppsSchema currentApp = applicationRepository.findByHashedApiKey(hashedApiKey).orElseThrow();
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Api-Key", "xxb");
+        headers.set("X-Api-Key", apiKey);
         ManageTokensRequest manageToken = new ManageTokensRequest(45L);
         HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
         ResponseEntity<String> tokenAmountResponse = restTemplate
             .postForEntity("/api/tokens/regenerate", request, String.class);
         assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", "xxb")).orElseThrow();
+        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", hashedApiKey)).orElseThrow();
         assertThat(userTest5.getTokenAmount()).isEqualTo(currentApp.getMaxTokenAmount());
     }
 
@@ -341,14 +350,15 @@ public class TokensTests {
         "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void shouldRegenerateTokensFromRealScheduling() throws SchedulerException, InterruptedException {
         String appApiKey = "apkiKeyForRegenTests";
-        UserTokenSchema userToken = new UserTokenSchema(new UserTokenId("tempUser", appApiKey), 0L);
+        String hashedAppApiKey = HashUtil.sha256(appApiKey);
+        UserTokenSchema userToken = new UserTokenSchema(new UserTokenId("tempUser", hashedAppApiKey), 0L);
         tokenRepository.save(userToken);
 
-        tokenService.scheduleAppJob(appApiKey, 3, TimeUnit.SECONDS);
+        tokenService.scheduleAppJob(hashedAppApiKey, 3, TimeUnit.SECONDS);
 
         Thread.sleep(10000);
 
-        UserTokenSchema updatedUser = tokenRepository.findById_LinkedAppAndId_UserId(appApiKey, "tempUser");
+        UserTokenSchema updatedUser = tokenRepository.findById_LinkedAppAndId_UserId(hashedAppApiKey, "tempUser");
         assertThat(updatedUser.getTokenAmount()).isGreaterThan(0L);
 
     }
@@ -358,13 +368,14 @@ public class TokensTests {
         "data/applicationsTestDatas.sql",
         "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldDeleteTheUser(){
+        String apiKey = "xxa";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Api-Key", "xxa");
+        headers.set("X-Api-Key", apiKey);
         HttpEntity<Void> request = new HttpEntity<>(headers);
         ResponseEntity<Void> deleteResponse = restTemplate
             .exchange("/api/tokens/userTest1", HttpMethod.DELETE, request, Void.class);
         assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(tokenRepository.findById_LinkedAppAndId_UserId("xxa", "userTest1")).isNull();
+        assertThat(tokenRepository.findById_LinkedAppAndId_UserId(HashUtil.sha256(apiKey), "userTest1")).isNull();
     }
 
     @Test
@@ -385,13 +396,14 @@ public class TokensTests {
         "data/applicationsTestDatas.sql",
         "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldDeleteAllApplicationUsers(){
+        String apiKey = "xxa";
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Api-Key", "xxa");
+        headers.set("X-Api-Key", apiKey);
         HttpEntity<Void> request = new HttpEntity<>(headers);
         ResponseEntity<Void> deleteResponse = restTemplate
             .exchange("/api/tokens/", HttpMethod.DELETE, request, Void.class);
         assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(tokenRepository.findAllById_LinkedApp("xxa")).isEmpty();
+        assertThat(tokenRepository.findAllById_LinkedApp(HashUtil.sha256(apiKey))).isEmpty();
     }
     
 }

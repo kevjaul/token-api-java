@@ -27,7 +27,7 @@ public class SyncQuartzDB {
     public void syncAllJobs() throws SchedulerException{
         List<AppsSchema> allApps = appsRepository.findAll();
         for(AppsSchema app : allApps){
-            tokenService.scheduleAppJob(app.getApiKey(), 
+            tokenService.scheduleAppJob(app.getHashedApiKey(), 
                 app.getTokenRegenerationTime().getDays() * 24 * 60
                 + app.getTokenRegenerationTime().getHours() * 60
                 + app.getTokenRegenerationTime().getMins(), TimeUnit.MINUTES);

@@ -32,11 +32,11 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal( HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException{
         String apiKey = request.getHeader("X-Api-Key");
-        if (apiKey == null || appsRpository.findByApiKey(apiKey).isEmpty()) {
+        if (apiKey == null || appsRpository.findByHashedApiKey(HashUtil.sha256(apiKey)).isEmpty()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
-        AppsSchema app = appsRpository.findByApiKey(apiKey).get();
+        AppsSchema app = appsRpository.findByHashedApiKey(HashUtil.sha256(apiKey)).get();
         Authentication authentication = new UsernamePasswordAuthenticationToken(app, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

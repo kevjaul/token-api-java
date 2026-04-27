@@ -20,10 +20,10 @@ public class TokenRegenerationJob implements Job{
 
     @Override
     public void execute(JobExecutionContext context) {
-        String appId = context.getJobDetail()
+        String hashedApikey = context.getJobDetail()
             .getJobDataMap()
-            .getString("appId");
-        AppsSchema appToRegen = appsRepository.findByApiKey(appId).orElseThrow();
+            .getString("hashedApiKey");
+        AppsSchema appToRegen = appsRepository.findByHashedApiKey(hashedApikey).orElseThrow();
         tokenService.regenerateForApp(appToRegen,1L);
     }
 }

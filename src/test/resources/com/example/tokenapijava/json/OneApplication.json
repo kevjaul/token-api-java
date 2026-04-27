@@ -1,7 +1,7 @@
 {
     "Id": 1,
     "name": "testApp",
-    "apiKey": "xxa",
+    "hashedApiKey": "cyI7bksL4n2OdZzlQsdhNjhJLy4y5+bTPtZ5qzbHk6o=",
     "max_token_value": 15,
     "min_token_value": 0,
     "token_regeneration_time": {

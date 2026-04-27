@@ -21,6 +21,7 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.example.tokenapijava.Conf.HashUtil;
 import com.example.tokenapijava.Conf.RateLimitService;
 import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationRequest;
@@ -97,22 +98,22 @@ public class ApplicationsTests {
     @Sql(scripts = {"data/clean.sql",
         "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
     void shouldDeleteAnApplicationAndAllReferencees() throws SchedulerException{
-        String appApiKey = "apkiKeyForRegenTests";
-        UserTokenSchema userToken = new UserTokenSchema(new UserTokenId("tempUser", appApiKey), 0L);
+        String hashedApiKey = HashUtil.sha256("apkiKeyForRegenTests");
+        UserTokenSchema userToken = new UserTokenSchema(new UserTokenId("tempUser", hashedApiKey), 0L);
         tokenRepository.save(userToken);
-        tokenService.scheduleAppJob(appApiKey, 30);
+        tokenService.scheduleAppJob(hashedApiKey, 30);
         HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Api-Key", appApiKey);
+        headers.set("X-Api-Key", "apkiKeyForRegenTests");
         HttpEntity<Void> request = new HttpEntity<>(headers);
         // Check that the job has successfully been scheduled 
-        assertThat(scheduler.checkExists(JobKey.jobKey("regen-" + appApiKey))).isTrue();
+        assertThat(scheduler.checkExists(JobKey.jobKey("regen-" + hashedApiKey))).isTrue();
         ResponseEntity<Void> deleteApplicationResponse = restTemplate
             .exchange("/api/apps/myApp", HttpMethod.DELETE, request, Void.class);
         assertThat(deleteApplicationResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         // No more DB entries
-        assertThat(tokenRepository.findAllById_LinkedApp(appApiKey)).isEmpty();
-        assertThat(applicationRepository.findByApiKey(appApiKey)).isEmpty();
+        assertThat(tokenRepository.findAllById_LinkedApp(hashedApiKey)).isEmpty();
+        assertThat(applicationRepository.findByHashedApiKey(HashUtil.sha256(hashedApiKey))).isEmpty();
         // No more job in scheduler
-        assertThat(scheduler.checkExists(JobKey.jobKey("regen-" + appApiKey))).isFalse();
+        assertThat(scheduler.checkExists(JobKey.jobKey("regen-" + hashedApiKey))).isFalse();
     }
 }

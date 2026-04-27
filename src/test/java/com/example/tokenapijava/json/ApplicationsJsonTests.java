@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.example.tokenapijava.Conf.HashUtil;
 import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.Schemas.TokenRegenerationSchema;
 
@@ -35,8 +36,8 @@ class ApplicationsJsonTests {
         TokenRegenerationSchema regenerationSchema = new TokenRegenerationSchema(1, 12, 0);
         TokenRegenerationSchema regenerationSchema2 = new TokenRegenerationSchema(1, 22, 0);
         applications = List.of(
-            new AppsSchema(1L, "testApp", "xxa", 15L, 0L,regenerationSchema),
-            new AppsSchema(2L, "testApp2", "xxb", 300L, 0L, regenerationSchema2)
+            new AppsSchema(1L, "testApp", HashUtil.sha256("xxa"), 15L, 0L,regenerationSchema),
+            new AppsSchema(2L, "testApp2", HashUtil.sha256("xxb"), 300L, 0L, regenerationSchema2)
         );
     }
 

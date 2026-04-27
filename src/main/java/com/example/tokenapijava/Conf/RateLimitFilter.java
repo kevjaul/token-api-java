@@ -33,10 +33,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+        String hashedApiKey = HashUtil.sha256(apiKey);
 
         String method = request.getMethod();
 
-        Bucket bucket = rateLimitService.resolveBucket(apiKey, method);
+        Bucket bucket = rateLimitService.resolveBucket(hashedApiKey, method);
 
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 

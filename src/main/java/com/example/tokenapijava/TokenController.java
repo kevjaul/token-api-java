@@ -48,7 +48,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> createAnApplicationUser(@RequestBody CreateApplicationUserRequest applicationUser, UriComponentsBuilder Ucb,Authentication auth ) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenId userId = new UserTokenId(applicationUser.userId(),app.getApiKey());
+        UserTokenId userId = new UserTokenId(applicationUser.userId(),app.getHashedApiKey());
         if(tokenRepository.existsById(userId)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("User already exists");
         } 
@@ -69,7 +69,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> getUserTokensAmount(@PathVariable String userId, Authentication auth){
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenId id = new UserTokenId(userId,app.getApiKey());
+        UserTokenId id = new UserTokenId(userId,app.getHashedApiKey());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return ResponseEntity.ok(userToken.getTokenAmount());
     }
@@ -79,7 +79,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> addUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth){
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenId id = new UserTokenId(userId,app.getApiKey());
+        UserTokenId id = new UserTokenId(userId,app.getHashedApiKey());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should add at least 1 token");
@@ -102,7 +102,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> subtractUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenId id = new UserTokenId(userId,app.getApiKey());
+        UserTokenId id = new UserTokenId(userId,app.getHashedApiKey());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should delete at least 1 token");
@@ -137,7 +137,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteUserTokens(@PathVariable String userId, Authentication auth) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenSchema userToken = tokenRepository.findById_LinkedAppAndId_UserId(app.getApiKey(), userId);
+        UserTokenSchema userToken = tokenRepository.findById_LinkedAppAndId_UserId(app.getHashedApiKey(), userId);
         if(userToken != null){
             tokenRepository.delete(userToken);
         }
@@ -150,7 +150,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteAllUsersTokens(Authentication auth) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        tokenRepository.deleteAllById_LinkedApp(app.getApiKey());
+        tokenRepository.deleteAllById_LinkedApp(app.getHashedApiKey());
         return ResponseEntity.noContent().build();
     }
     

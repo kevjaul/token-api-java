@@ -36,7 +36,7 @@ public class AppsSchema{
     private String appName;
 
     @NotBlank 
-    private String apiKey;
+    private String hashedApiKey;
 
     @JsonProperty("max_token_value") @Schema(defaultValue = "15")
     private Long maxTokenAmount;

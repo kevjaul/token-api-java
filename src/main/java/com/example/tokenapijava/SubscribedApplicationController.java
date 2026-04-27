@@ -33,6 +33,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import com.example.tokenapijava.Schemas.AppsSchema;
+import com.example.tokenapijava.Conf.HashUtil;
 import com.example.tokenapijava.Conf.TokenService;
 import com.example.tokenapijava.DTOs.CreateApplicationRequest;
 
@@ -68,7 +69,8 @@ public class SubscribedApplicationController {
             //AppName already in use
             return ResponseEntity.notFound().build();
         }
-        AppsSchema newApp = new AppsSchema(null, application.appName(), UUID.randomUUID().toString(), application.maxTokenAmount(), application.minTokenAmount(), application.tokenRegenerationTime());
+        String apiKey = UUID.randomUUID().toString();
+        AppsSchema newApp = new AppsSchema(null, application.appName(), HashUtil.sha256(apiKey), application.maxTokenAmount(), application.minTokenAmount(), application.tokenRegenerationTime());
         AppsSchema savedApp = appsRepository.save(newApp);
         URI locationOfNewApp = Ucb
             .path("/api/apps/{id}")
@@ -77,8 +79,8 @@ public class SubscribedApplicationController {
         long intervalMinutes = savedApp.getTokenRegenerationTime().getDays() * 24 * 60
             + savedApp.getTokenRegenerationTime().getHours() * 60
             + savedApp.getTokenRegenerationTime().getMins();
-        tokenService.scheduleAppJob(savedApp.getApiKey(), intervalMinutes);
-        return ResponseEntity.created(locationOfNewApp).body("{\"api_key\": \"" + savedApp.getApiKey() + "\"}");
+        tokenService.scheduleAppJob(savedApp.getHashedApiKey(), intervalMinutes);
+        return ResponseEntity.created(locationOfNewApp).body("{\"api_key\": \"" + apiKey + "\"}");
     }
 
     @GetMapping("/list")
@@ -100,9 +102,9 @@ public class SubscribedApplicationController {
     @SecurityRequirement(name = "apiKeyAuth")
     public ResponseEntity<?> deleteAnApplications(Authentication auth) throws SchedulerException{
         AppsSchema currentLoggedApp = (AppsSchema) auth.getPrincipal();
-        tokenRepository.deleteAllById_LinkedApp(currentLoggedApp.getApiKey());
-        if(scheduler.checkExists(JobKey.jobKey("regen-" + currentLoggedApp.getApiKey()))){
-            tokenService.deleteAppSchedule(currentLoggedApp.getApiKey());
+        tokenRepository.deleteAllById_LinkedApp(currentLoggedApp.getHashedApiKey());
+        if(scheduler.checkExists(JobKey.jobKey("regen-" + currentLoggedApp.getHashedApiKey()))){
+            tokenService.deleteAppSchedule(currentLoggedApp.getHashedApiKey());
         }
         appsRepository.delete(currentLoggedApp);
         return ResponseEntity.noContent().build();

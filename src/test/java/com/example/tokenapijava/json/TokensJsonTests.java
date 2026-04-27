@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.example.tokenapijava.Conf.HashUtil;
 import com.example.tokenapijava.Schemas.AppsSchema;
 import com.example.tokenapijava.Schemas.UserTokenId;
 import com.example.tokenapijava.Schemas.UserTokenSchema;
@@ -35,7 +36,7 @@ class TokensJsonTests {
 
     @BeforeEach
     void setUp(){
-        UserTokenId userTokenId = new UserTokenId("userTest1", "xxa");
+        UserTokenId userTokenId = new UserTokenId("userTest1", HashUtil.sha256("xxa"));
         UserTokenSchema userToken1 = new UserTokenSchema(userTokenId, 3L);
         usersTokens = List.of(userToken1);
     }
@@ -52,7 +53,7 @@ class TokensJsonTests {
         assertThat(jsonNode.get("id").has("userId")).isTrue();
         assertThat(jsonNode.get("id").get("userId").asText()).isEqualTo("userTest1");
         assertThat(jsonNode.get("id").has("linkedApp")).isTrue();
-        assertThat(jsonNode.get("id").get("linkedApp").asText()).isEqualTo("xxa");
+        assertThat(jsonNode.get("id").get("linkedApp").asText()).isEqualTo(HashUtil.sha256("xxa"));
     }
 
     @Test

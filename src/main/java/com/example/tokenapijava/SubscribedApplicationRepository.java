@@ -9,5 +9,5 @@ import java.util.Optional;
 
 public interface SubscribedApplicationRepository extends JpaRepository<AppsSchema, Long>, PagingAndSortingRepository<AppsSchema, Long>{
     AppsSchema findByAppName(String appName);
-    Optional<AppsSchema> findByApiKey(String apiKey);
+    Optional<AppsSchema> findByHashedApiKey(String hashedApiKey);
 }

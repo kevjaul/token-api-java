@@ -31,7 +31,7 @@ public class TokenService {
 
     public void regenerateForApp(AppsSchema app, Long tokenToAdd) {
         Long appMaxTokenAmount = app.getMaxTokenAmount();
-        tokenRepository.findAllById_LinkedApp(app.getApiKey()).forEach(userToken -> {
+        tokenRepository.findAllById_LinkedApp(app.getHashedApiKey()).forEach(userToken -> {
             long currentUserTokenAmount = userToken.getTokenAmount();
             if (currentUserTokenAmount == appMaxTokenAmount){
                 return;
@@ -47,14 +47,14 @@ public class TokenService {
     }
 
     // Default value is minutes
-    public void scheduleAppJob(String appId, long interval) throws SchedulerException {
-        scheduleAppJob(appId, interval, TimeUnit.MINUTES);
+    public void scheduleAppJob(String hashedApiKey, long interval) throws SchedulerException {
+        scheduleAppJob(hashedApiKey, interval, TimeUnit.MINUTES);
     }
 
-    public void scheduleAppJob(String appId, long interval, TimeUnit unit) throws SchedulerException {
+    public void scheduleAppJob(String hashedApiKey, long interval, TimeUnit unit) throws SchedulerException {
         JobDetail job = JobBuilder.newJob(TokenRegenerationJob.class)
-            .withIdentity("regen-" + appId)
-            .usingJobData("appId", appId)
+            .withIdentity("regen-" + hashedApiKey)
+            .usingJobData("hashedApiKey", hashedApiKey)
             .storeDurably()
             .build();
 
@@ -74,23 +74,23 @@ public class TokenService {
         schedule = schedule.repeatForever();
         
         Trigger trigger = TriggerBuilder.newTrigger()
-            .withIdentity("regen-trigger-" + appId)
-            .forJob("regen-" + appId)
+            .withIdentity("regen-trigger-" + hashedApiKey)
+            .forJob("regen-" + hashedApiKey)
             .withSchedule(schedule)
             .startNow()
             .build();
 
-        if(scheduler.checkExists(JobKey.jobKey("regen-" + appId))){
-            scheduler.rescheduleJob(TriggerKey.triggerKey("regen-trigger-" + appId), trigger);
+        if(scheduler.checkExists(JobKey.jobKey("regen-" + hashedApiKey))){
+            scheduler.rescheduleJob(TriggerKey.triggerKey("regen-trigger-" + hashedApiKey), trigger);
         } else {
             scheduler.scheduleJob(job, trigger);    
         }
-        System.out.println("Job created for " + appId + " with job key regen-" + appId);
+        System.out.println("Job created for " + hashedApiKey + " with job key regen-" + hashedApiKey);
     }
 
-    public void deleteAppSchedule(String appId) throws SchedulerException {
-        JobKey jobKey = JobKey.jobKey("regen-" + appId);
+    public void deleteAppSchedule(String hashedApiKey) throws SchedulerException {
+        JobKey jobKey = JobKey.jobKey("regen-" + hashedApiKey);
         scheduler.deleteJob(jobKey);
-        System.out.println("Job deleted for " + appId + " with job key regen-" + appId);   
+        System.out.println("Job deleted for " + hashedApiKey + " with job key regen-" + hashedApiKey);   
     }
 }
