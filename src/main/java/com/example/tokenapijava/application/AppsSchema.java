@@ -1,8 +1,8 @@
-package com.example.tokenapijava.Schemas;
+package com.example.tokenapijava.application;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import jakarta.validation.constraints.NotBlank;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import jakarta.persistence.Access;
 import jakarta.persistence.AccessType;
@@ -12,8 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 
 import lombok.*;
 
@@ -34,9 +33,6 @@ public class AppsSchema{
 
     @NotBlank @JsonProperty("name") 
     private String appName;
-
-    @NotBlank 
-    private String hashedApiKey;
 
     @JsonProperty("max_token_value") @Schema(defaultValue = "15")
     private Long maxTokenAmount;

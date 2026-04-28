@@ -1,13 +1,8 @@
-package com.example.tokenapijava;
+package com.example.tokenapijava.application;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
-import com.example.tokenapijava.Schemas.AppsSchema;
-
-import java.util.Optional;
-
 public interface SubscribedApplicationRepository extends JpaRepository<AppsSchema, Long>, PagingAndSortingRepository<AppsSchema, Long>{
     AppsSchema findByAppName(String appName);
-    Optional<AppsSchema> findByHashedApiKey(String hashedApiKey);
 }

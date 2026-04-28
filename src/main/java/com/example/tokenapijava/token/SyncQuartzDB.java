@@ -1,4 +1,7 @@
-package com.example.tokenapijava.Conf;
+package com.example.tokenapijava.token;
+
+import java.util.concurrent.TimeUnit;
+import java.util.List;
 
 import org.quartz.SchedulerException;
 
@@ -6,11 +9,8 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import com.example.tokenapijava.Schemas.AppsSchema;
-import com.example.tokenapijava.SubscribedApplicationRepository;
+import com.example.tokenapijava.application.AppsSchema;
+import com.example.tokenapijava.application.SubscribedApplicationRepository;
 
 @Component
 public class SyncQuartzDB {
@@ -27,7 +27,7 @@ public class SyncQuartzDB {
     public void syncAllJobs() throws SchedulerException{
         List<AppsSchema> allApps = appsRepository.findAll();
         for(AppsSchema app : allApps){
-            tokenService.scheduleAppJob(app.getHashedApiKey(), 
+            tokenService.scheduleAppJob(app.getId(), 
                 app.getTokenRegenerationTime().getDays() * 24 * 60
                 + app.getTokenRegenerationTime().getHours() * 60
                 + app.getTokenRegenerationTime().getMins(), TimeUnit.MINUTES);

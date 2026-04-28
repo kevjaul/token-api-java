@@ -1,38 +1,41 @@
 package com.example.tokenapijava;
 
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import org.quartz.SchedulerException;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.isNull;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-
-import org.quartz.SchedulerException;
-
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
-import com.example.tokenapijava.Conf.HashUtil;
-import com.example.tokenapijava.Conf.RateLimitService;
-import com.example.tokenapijava.Conf.TokenService;
-import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
-import com.example.tokenapijava.DTOs.ManageTokensRequest;
-import com.example.tokenapijava.Schemas.AppsSchema;
-import com.example.tokenapijava.Schemas.UserTokenId;
-import com.example.tokenapijava.Schemas.UserTokenSchema;
+import com.example.tokenapijava.application.AppsSchema;
+import com.example.tokenapijava.application.SubscribedApplicationRepository;
+import com.example.tokenapijava.config.RateLimitService;
+import com.example.tokenapijava.token.dtos.CreateApplicationUserRequest;
+import com.example.tokenapijava.token.dtos.ManageTokensRequest;
+import com.example.tokenapijava.token.TokenRepository;
+import com.example.tokenapijava.token.TokenService;
+import com.example.tokenapijava.token.UserTokenId;
+import com.example.tokenapijava.token.UserTokenSchema;
+import com.example.tokenapijava.utils.HashUtil;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -41,19 +44,19 @@ import com.example.tokenapijava.Schemas.UserTokenSchema;
 public class TokensTests {
 
     @Autowired
-    TestRestTemplate restTemplate;
+    RateLimitService rateLimitService;
 
     @Autowired
     SubscribedApplicationRepository applicationRepository;
+
+    @Autowired
+    TestRestTemplate restTemplate;
 
     @Autowired
     TokenRepository tokenRepository;
 
     @Autowired
     TokenService tokenService;
-
-    @Autowired
-    RateLimitService rateLimitService;
 
     @BeforeEach
     void setUp() {
@@ -71,6 +74,13 @@ public class TokensTests {
         ResponseEntity<Void> createUserResponse = restTemplate
             .postForEntity("/api/tokens/register", request, Void.class);
         assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        URI location = createUserResponse.getHeaders().getLocation();
+        assertThat(location).isNotNull();
+
+        String path = location.getPath();
+        String createdUserId = path.substring(path.lastIndexOf("/") + 1);
+        assertThat(tokenRepository.findById_AppIdAndId_UserId(1L, createdUserId)).isPresent();
     }
 
     @Test
@@ -188,7 +198,7 @@ public class TokensTests {
         String apiKey = "xxa";
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Api-Key", apiKey);
-        AppsSchema currentApp = applicationRepository.findByHashedApiKey(HashUtil.sha256(apiKey)).orElseThrow();
+        AppsSchema currentApp = applicationRepository.findById(1L).orElseThrow();
         ManageTokensRequest manageToken = new ManageTokensRequest(currentApp.getMaxTokenAmount() - 1L);
         HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
         ResponseEntity<String> tokenAmountResponse = restTemplate
@@ -257,7 +267,7 @@ public class TokensTests {
         String apiKey = "xxa";
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Api-Key", apiKey);
-        AppsSchema currentApp = applicationRepository.findByHashedApiKey(HashUtil.sha256(apiKey)).orElseThrow();
+        AppsSchema currentApp = applicationRepository.findById(1L).orElseThrow();
         ManageTokensRequest manageToken = new ManageTokensRequest(currentApp.getMaxTokenAmount() + 1L);
         HttpEntity<ManageTokensRequest> request = new HttpEntity<>(manageToken, headers);
         ResponseEntity<String> tokenAmountResponse = restTemplate
@@ -301,8 +311,8 @@ public class TokensTests {
         ResponseEntity<String> tokenAmountResponse = restTemplate
             .postForEntity("/api/tokens/regenerate", request, String.class);
         assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        UserTokenSchema userTest1 = tokenRepository.findById(new UserTokenId("userTest1", hashedApiKey)).orElseThrow();
-        UserTokenSchema userTest3 = tokenRepository.findById(new UserTokenId("userTest3", hashedApiKey)).orElseThrow();
+        UserTokenSchema userTest1 = tokenRepository.findById(new UserTokenId("userTest1", 1L)).orElseThrow();
+        UserTokenSchema userTest3 = tokenRepository.findById(new UserTokenId("userTest3", 1L)).orElseThrow();
         assertThat(userTest1.getTokenAmount()).isEqualTo(3+1);
         assertThat(userTest3.getTokenAmount()).isEqualTo(13+1);
     }
@@ -314,7 +324,7 @@ public class TokensTests {
     void shouldNotRegenerateTokenIfMaxTokenAmountAlreadyReached() {
         String apiKey = "xxb";
         String hashedApiKey = HashUtil.sha256(apiKey);
-        AppsSchema currentApp = applicationRepository.findByHashedApiKey(hashedApiKey).orElseThrow();
+        AppsSchema currentApp = applicationRepository.findById(2L).orElseThrow();
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Api-Key", apiKey);
         ManageTokensRequest manageToken = new ManageTokensRequest(1L);
@@ -322,7 +332,7 @@ public class TokensTests {
         ResponseEntity<String> tokenAmountResponse = restTemplate
             .postForEntity("/api/tokens/regenerate", request, String.class);
         assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", hashedApiKey)).orElseThrow();
+        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", 2L)).orElseThrow();
         assertThat(userTest5.getTokenAmount()).isEqualTo(currentApp.getMaxTokenAmount());
     }
 
@@ -333,7 +343,7 @@ public class TokensTests {
     void shouldRegenerateToMaxTokenAmountIfNewAmountExceedMaxTokenAmountForApplication() {
         String apiKey = "xxb";
         String hashedApiKey = HashUtil.sha256(apiKey);
-        AppsSchema currentApp = applicationRepository.findByHashedApiKey(hashedApiKey).orElseThrow();
+        AppsSchema currentApp = applicationRepository.findById(2L).orElseThrow();
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Api-Key", apiKey);
         ManageTokensRequest manageToken = new ManageTokensRequest(45L);
@@ -341,7 +351,7 @@ public class TokensTests {
         ResponseEntity<String> tokenAmountResponse = restTemplate
             .postForEntity("/api/tokens/regenerate", request, String.class);
         assertThat(tokenAmountResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", hashedApiKey)).orElseThrow();
+        UserTokenSchema userTest5 = tokenRepository.findById(new UserTokenId("userTest5", 2L)).orElseThrow();
         assertThat(userTest5.getTokenAmount()).isEqualTo(currentApp.getMaxTokenAmount());
     }
 
@@ -349,16 +359,16 @@ public class TokensTests {
     @Sql(scripts = {"data/clean.sql",
         "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     void shouldRegenerateTokensFromRealScheduling() throws SchedulerException, InterruptedException {
-        String appApiKey = "apkiKeyForRegenTests";
+        String appApiKey = "apiKeyForRegenTests";
         String hashedAppApiKey = HashUtil.sha256(appApiKey);
-        UserTokenSchema userToken = new UserTokenSchema(new UserTokenId("tempUser", hashedAppApiKey), 0L);
+        UserTokenSchema userToken = new UserTokenSchema(new UserTokenId("tempUser", 3L), 0L);
         tokenRepository.save(userToken);
 
-        tokenService.scheduleAppJob(hashedAppApiKey, 3, TimeUnit.SECONDS);
+        tokenService.scheduleAppJob(3L, 3, TimeUnit.SECONDS);
 
         Thread.sleep(10000);
 
-        UserTokenSchema updatedUser = tokenRepository.findById_LinkedAppAndId_UserId(hashedAppApiKey, "tempUser");
+        UserTokenSchema updatedUser = tokenRepository.findById_AppIdAndId_UserId(3L, "tempUser").orElseThrow();
         assertThat(updatedUser.getTokenAmount()).isGreaterThan(0L);
 
     }
@@ -375,7 +385,7 @@ public class TokensTests {
         ResponseEntity<Void> deleteResponse = restTemplate
             .exchange("/api/tokens/userTest1", HttpMethod.DELETE, request, Void.class);
         assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(tokenRepository.findById_LinkedAppAndId_UserId(HashUtil.sha256(apiKey), "userTest1")).isNull();
+        assertThat(tokenRepository.findById_AppIdAndId_UserId(1L, "userTest1")).isEmpty();
     }
 
     @Test
@@ -403,7 +413,7 @@ public class TokensTests {
         ResponseEntity<Void> deleteResponse = restTemplate
             .exchange("/api/tokens/", HttpMethod.DELETE, request, Void.class);
         assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(tokenRepository.findAllById_LinkedApp(HashUtil.sha256(apiKey))).isEmpty();
+        assertThat(tokenRepository.findAllById_AppId(1L)).isEmpty();
     }
     
 }

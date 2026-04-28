@@ -1,27 +1,25 @@
 package com.example.tokenapijava;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.example.tokenapijava.Conf.RateLimitService;
-import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
+import com.example.tokenapijava.config.RateLimitService;
+import com.example.tokenapijava.token.dtos.CreateApplicationUserRequest;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -30,10 +28,10 @@ import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
 public class ConfTests {
 
     @Autowired
-    TestRestTemplate restTemplate;
+    RateLimitService rateLimitService;
 
     @Autowired
-    RateLimitService rateLimitService;
+    TestRestTemplate restTemplate;
 
     @BeforeEach
     void setUp() {

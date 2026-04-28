@@ -1,4 +1,4 @@
-package com.example.tokenapijava.Conf;
+package com.example.tokenapijava.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;

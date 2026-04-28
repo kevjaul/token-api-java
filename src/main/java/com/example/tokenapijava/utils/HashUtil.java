@@ -1,4 +1,4 @@
-package com.example.tokenapijava.Conf;
+package com.example.tokenapijava.utils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
