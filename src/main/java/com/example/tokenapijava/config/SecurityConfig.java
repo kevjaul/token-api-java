@@ -2,8 +2,12 @@ package com.example.tokenapijava.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+
+import org.springdoc.core.customizers.OpenApiCustomizer;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -57,6 +61,30 @@ public class SecurityConfig {
                         - Limitation par API Key
                 """)
             );
+    }
+
+    @Bean
+    public OpenApiCustomizer globalHeaderCustomizer() {
+        return openApi -> openApi.getPaths().forEach((path, pathItem) -> {
+
+            pathItem.readOperations().forEach(operation -> {
+
+                boolean hasApiKeySecurity = operation.getSecurity() != null
+                    && operation.getSecurity().stream()
+                        .anyMatch(sec -> sec.containsKey("apiKeyAuth"));
+
+                if (hasApiKeySecurity) {
+                    operation.addParametersItem(
+                        new Parameter()
+                            .in("header")
+                            .name("X-Target-App")
+                            .required(false)
+                            .schema(new StringSchema())
+                            .description("Only required if an ADMIN key is used")
+                    );
+                }
+            });
+        });
     }
 
     @Bean

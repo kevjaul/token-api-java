@@ -17,26 +17,38 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.example.tokenapijava.apiKey.ApiKeyRepository;
+import com.example.tokenapijava.apiKey.ApiKeySchema;
+import com.example.tokenapijava.apiKey.Role; 
+
 import com.example.tokenapijava.utils.HashUtil;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
+    private ApiKeyRepository apiKeyRepository;
+
     private final RateLimitService rateLimitService;
     
-    public RateLimitFilter(RateLimitService rateLimitService) {
+    public RateLimitFilter(ApiKeyRepository apiKeyRepository, RateLimitService rateLimitService) {
+        this.apiKeyRepository = apiKeyRepository;
         this.rateLimitService = rateLimitService;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String apiKey = request.getHeader("X-Api-Key");
-        if(apiKey == null) {
+        String apiKeyValue = request.getHeader("X-Api-Key");
+        if(apiKeyValue == null) {
             filterChain.doFilter(request, response);
             return;
         }
-        String hashedApiKey = HashUtil.sha256(apiKey);
 
+        String hashedApiKey = HashUtil.sha256(apiKeyValue);
+        ApiKeySchema apiKey = apiKeyRepository.findByHashedApiKey(hashedApiKey).orElseThrow();
+        if(apiKey.getRoleType() == Role.ADMIN) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         String method = request.getMethod();
 
         Bucket bucket = rateLimitService.resolveBucket(hashedApiKey, method);

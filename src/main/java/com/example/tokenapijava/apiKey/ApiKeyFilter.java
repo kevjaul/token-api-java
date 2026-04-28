@@ -54,7 +54,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                 app = appsRpository.findById(appId).orElseThrow();
                 break;
             case ADMIN:
-                if(request.getHeader("X-Target-App").isEmpty() || !appsRpository.existsById(Long.parseLong(request.getHeader("X-Target-App")))){
+                if(request.getHeader("X-Target-App") == null || !appsRpository.existsById(Long.parseLong(request.getHeader("X-Target-App")))){
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
