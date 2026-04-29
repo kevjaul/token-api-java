@@ -1,5 +1,6 @@
 # 🚀 Token Management API
 ![Java](https://img.shields.io/badge/Java-19-blue)&nbsp; ![Spring Boot](https://img.shields.io/badge/SpringBoot-4.x-brightgreen)&nbsp; ![Tests](https://img.shields.io/github/actions/workflow/status/kevjaul/token-api-java/test-ci.yml) &nbsp;![Build Status](https://github.com/kevjaul/token-api-java/actions/workflows/auto-deploy.yml/badge.svg) &nbsp;
+
 A RESTful API designed to manage token-based systems for multiple applications.
 Each application can manage its own users and token balances securely using an API key.
 
