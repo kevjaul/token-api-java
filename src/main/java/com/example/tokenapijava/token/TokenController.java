@@ -1,4 +1,8 @@
-package com.example.tokenapijava;
+package com.example.tokenapijava.token;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.transaction.Transactional;
 
@@ -17,16 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.example.tokenapijava.Conf.TokenService;
-import com.example.tokenapijava.DTOs.CreateApplicationUserRequest;
-import com.example.tokenapijava.DTOs.ManageTokensRequest;
-import com.example.tokenapijava.Schemas.AppsSchema;
-import com.example.tokenapijava.Schemas.UserTokenId;
-import com.example.tokenapijava.Schemas.UserTokenSchema;
-
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.example.tokenapijava.application.AppsSchema;
+import com.example.tokenapijava.token.dtos.CreateApplicationUserRequest;
+import com.example.tokenapijava.token.dtos.ManageTokensRequest;
 
 @RestController
 @RequestMapping("/api/tokens")
@@ -48,7 +45,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> createAnApplicationUser(@RequestBody CreateApplicationUserRequest applicationUser, UriComponentsBuilder Ucb,Authentication auth ) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenId userId = new UserTokenId(applicationUser.userId(),app.getApiKey());
+        UserTokenId userId = new UserTokenId(applicationUser.userId(),app.getId());
         if(tokenRepository.existsById(userId)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("User already exists");
         } 
@@ -69,7 +66,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> getUserTokensAmount(@PathVariable String userId, Authentication auth){
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenId id = new UserTokenId(userId,app.getApiKey());
+        UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return ResponseEntity.ok(userToken.getTokenAmount());
     }
@@ -79,7 +76,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> addUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth){
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenId id = new UserTokenId(userId,app.getApiKey());
+        UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should add at least 1 token");
@@ -102,7 +99,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> subtractUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenId id = new UserTokenId(userId,app.getApiKey());
+        UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should delete at least 1 token");
@@ -137,7 +134,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteUserTokens(@PathVariable String userId, Authentication auth) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        UserTokenSchema userToken = tokenRepository.findById_LinkedAppAndId_UserId(app.getApiKey(), userId);
+        UserTokenSchema userToken = tokenRepository.findById_AppIdAndId_UserId(app.getId(), userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NO_CONTENT));
         if(userToken != null){
             tokenRepository.delete(userToken);
         }
@@ -150,7 +147,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteAllUsersTokens(Authentication auth) {
         AppsSchema app = (AppsSchema) auth.getPrincipal();
-        tokenRepository.deleteAllById_LinkedApp(app.getApiKey());
+        tokenRepository.deleteAllById_AppId(app.getId());
         return ResponseEntity.noContent().build();
     }
     

@@ -1,6 +1,7 @@
-package com.example.tokenapijava.Schemas;
+package com.example.tokenapijava.application;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.persistence.Access;
 import jakarta.persistence.AccessType;
 import jakarta.persistence.Column;

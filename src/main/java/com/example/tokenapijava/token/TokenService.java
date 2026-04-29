@@ -1,4 +1,4 @@
-package com.example.tokenapijava.Conf;
+package com.example.tokenapijava.token;
 
 import java.util.concurrent.TimeUnit;
 
@@ -14,8 +14,7 @@ import org.quartz.TriggerKey;
 
 import org.springframework.stereotype.Service;
 
-import com.example.tokenapijava.Schemas.AppsSchema;
-import com.example.tokenapijava.TokenRepository;
+import com.example.tokenapijava.application.AppsSchema;
 
 @Service
 public class TokenService {
@@ -31,7 +30,7 @@ public class TokenService {
 
     public void regenerateForApp(AppsSchema app, Long tokenToAdd) {
         Long appMaxTokenAmount = app.getMaxTokenAmount();
-        tokenRepository.findAllById_LinkedApp(app.getApiKey()).forEach(userToken -> {
+        tokenRepository.findAllById_AppId(app.getId()).forEach(userToken -> {
             long currentUserTokenAmount = userToken.getTokenAmount();
             if (currentUserTokenAmount == appMaxTokenAmount){
                 return;
@@ -47,11 +46,11 @@ public class TokenService {
     }
 
     // Default value is minutes
-    public void scheduleAppJob(String appId, long interval) throws SchedulerException {
+    public void scheduleAppJob(Long appId, long interval) throws SchedulerException {
         scheduleAppJob(appId, interval, TimeUnit.MINUTES);
     }
 
-    public void scheduleAppJob(String appId, long interval, TimeUnit unit) throws SchedulerException {
+    public void scheduleAppJob(Long appId, long interval, TimeUnit unit) throws SchedulerException {
         JobDetail job = JobBuilder.newJob(TokenRegenerationJob.class)
             .withIdentity("regen-" + appId)
             .usingJobData("appId", appId)
@@ -85,12 +84,12 @@ public class TokenService {
         } else {
             scheduler.scheduleJob(job, trigger);    
         }
-        System.out.println("Job created for " + appId + " with job key regen-" + appId);
+        System.out.println("Job created for application " + appId + " with job key regen-" + appId);
     }
 
-    public void deleteAppSchedule(String appId) throws SchedulerException {
+    public void deleteAppSchedule(Long appId) throws SchedulerException {
         JobKey jobKey = JobKey.jobKey("regen-" + appId);
         scheduler.deleteJob(jobKey);
-        System.out.println("Job deleted for " + appId + " with job key regen-" + appId);   
+        System.out.println("Job deleted for application " + appId + " with job key regen-" + appId);   
     }
 }

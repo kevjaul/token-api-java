@@ -1,5 +1,6 @@
-package com.example.tokenapijava.Schemas;
+package com.example.tokenapijava.scope;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Access;
 import jakarta.persistence.AccessType;
 import jakarta.persistence.Column;
@@ -15,13 +16,13 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Embeddable
-@Table(name = "USER_TOKENS")
+@Table(name = "SCOPES")
 @Access(AccessType.FIELD)
-public class UserTokenId implements Serializable{
-    @Column(name = "USER_ID")
-    String userId;
+public class ApiKeyScopeId implements Serializable{
+    @Column(name = "HASHED_API_KEY")
+    private String hashedApiKey;
 
-    @Column(name = "LINKED_APP")
-    String linkedApp;
-
+    @Nullable
+    @Column(name = "APP_ID")
+    private Long appId;
 }

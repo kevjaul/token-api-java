@@ -1,4 +1,4 @@
-package com.example.tokenapijava.DTOs;
+package com.example.tokenapijava.token.dtos;
 
 public record CreateApplicationUserRequest(
     String userId,

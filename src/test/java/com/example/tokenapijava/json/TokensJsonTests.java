@@ -3,6 +3,12 @@ package com.example.tokenapijava.json;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,15 +18,8 @@ import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.example.tokenapijava.Schemas.AppsSchema;
-import com.example.tokenapijava.Schemas.UserTokenId;
-import com.example.tokenapijava.Schemas.UserTokenSchema;
+import com.example.tokenapijava.token.UserTokenId;
+import com.example.tokenapijava.token.UserTokenSchema;
 
 @JsonTest
 @ActiveProfiles("test")
@@ -29,13 +28,13 @@ class TokensJsonTests {
     private JacksonTester<UserTokenSchema> json;
     
     @Autowired
-    private JacksonTester<AppsSchema[]> jsonList;
+    private JacksonTester<UserTokenSchema[]> jsonList;
 
     private List<UserTokenSchema> usersTokens;
 
     @BeforeEach
     void setUp(){
-        UserTokenId userTokenId = new UserTokenId("userTest1", "xxa");
+        UserTokenId userTokenId = new UserTokenId("userTest1", 1L);
         UserTokenSchema userToken1 = new UserTokenSchema(userTokenId, 3L);
         usersTokens = List.of(userToken1);
     }
@@ -51,8 +50,8 @@ class TokensJsonTests {
         assertThat(jsonNode.has("id")).isTrue();
         assertThat(jsonNode.get("id").has("userId")).isTrue();
         assertThat(jsonNode.get("id").get("userId").asText()).isEqualTo("userTest1");
-        assertThat(jsonNode.get("id").has("linkedApp")).isTrue();
-        assertThat(jsonNode.get("id").get("linkedApp").asText()).isEqualTo("xxa");
+        assertThat(jsonNode.get("id").has("appId")).isTrue();
+        assertThat(jsonNode.get("id").get("appId").asLong()).isEqualTo(1L);
     }
 
     @Test

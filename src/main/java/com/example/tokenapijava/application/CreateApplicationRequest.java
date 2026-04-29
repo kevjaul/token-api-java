@@ -1,6 +1,4 @@
-package com.example.tokenapijava.DTOs;
-
-import com.example.tokenapijava.Schemas.TokenRegenerationSchema;
+package com.example.tokenapijava.application;
 
 import jakarta.validation.Valid;
 

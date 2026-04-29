@@ -1,4 +1,5 @@
 # 🚀 Token Management API
+![Java](https://img.shields.io/badge/Java-19-blue)&nbsp; ![Spring Boot](https://img.shields.io/badge/SpringBoot-4.x-brightgreen)&nbsp; ![Tests](https://img.shields.io/github/actions/workflow/status/kevjaul/token-api-java/test-ci.yml) &nbsp;![Build Status](https://github.com/kevjaul/token-api-java/actions/workflows/auto-deploy.yml/badge.svg) &nbsp;
 
 A RESTful API designed to manage token-based systems for multiple applications.
 Each application can manage its own users and token balances securely using an API key.
@@ -8,7 +9,7 @@ Each application can manage its own users and token balances securely using an A
 ## 🧱 Tech Stack
 
 * Java 19+
-* Spring Boot
+* Spring Boot 4
 * Spring Security
 * Spring Data JPA
 * PostgreSQL / SQL Database
@@ -135,7 +136,8 @@ Tests include:
   * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
   * Prometheus ready endpoint
 * CI/CD release note
-* Only saved hashed apiKey
+* Recycle ApiKeys (expiresAt/revoked)
+* Logs: [Timestamp][hashedApiKey.substring(0,12)/ADMIN]([for AppId: (if ADMIN)]) -> Action processed
 * (Collection Postman ?)
 
 ---
