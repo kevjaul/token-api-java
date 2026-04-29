@@ -4,6 +4,7 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 
 import java.net.URI;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,6 +15,8 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTe
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
@@ -25,6 +28,7 @@ import com.example.tokenapijava.apiKey.Role;
 import com.example.tokenapijava.application.CreateApplicationRequest;
 import com.example.tokenapijava.application.TokenRegenerationSchema;
 import com.example.tokenapijava.scope.ApiKeyScopeRepository;
+import com.example.tokenapijava.token.dtos.CreateApplicationUserRequest;
 import com.example.tokenapijava.utils.HashUtil;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -63,5 +67,50 @@ public class ApiKeyTests {
         String path = location.getPath();
         Long createdAppId = Long.parseLong(path.substring(path.lastIndexOf("/") + 1));
         assertThat(apiKeyScopeRepository.findById_appId(createdAppId)).isPresent();
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    void shouldUnauthorizedIfApiKeyIsExpired() throws InterruptedException{
+        String apiKey = "xxa";
+        ApiKeySchema newApiKey = new ApiKeySchema(HashUtil.sha256(apiKey), Role.CLASSIC, Instant.now(), Instant.now().plusSeconds(3), false);
+        apiKeyRepository.save(newApiKey);
+
+        Thread.sleep(4000);
+        CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3L);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", apiKey);
+        HttpEntity<CreateApplicationUserRequest> request = new HttpEntity<>(applicationUser, headers);
+        ResponseEntity<String> createUserResponse = restTemplate
+            .postForEntity("/api/tokens/register", request, String.class);
+
+        assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        DocumentContext documentContext = JsonPath.parse(createUserResponse.getBody());
+        String errorKey = documentContext.read("$.error");
+        assertThat(errorKey).isEqualTo("API_KEY_EXPIRED");
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    void shouldUnauthorizedIfApiKeyIsRevoked(){
+        String apiKey = "xxa";
+        ApiKeySchema newApiKey = new ApiKeySchema(HashUtil.sha256(apiKey), Role.CLASSIC, Instant.now(), Instant.now().plusSeconds(60*60*24*30), true);
+        apiKeyRepository.save(newApiKey);
+
+        CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3L);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", apiKey);
+        HttpEntity<CreateApplicationUserRequest> request = new HttpEntity<>(applicationUser, headers);
+        ResponseEntity<String> createUserResponse = restTemplate
+            .postForEntity("/api/tokens/register", request, String.class);
+
+        assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        DocumentContext documentContext = JsonPath.parse(createUserResponse.getBody());
+        String errorKey = documentContext.read("$.error");
+        assertThat(errorKey).isEqualTo("API_KEY_REVOKED");
     }
 }

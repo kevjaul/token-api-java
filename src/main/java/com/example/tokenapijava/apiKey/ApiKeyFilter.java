@@ -1,7 +1,11 @@
 package com.example.tokenapijava.apiKey;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -49,6 +53,20 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         AppsSchema app = null;
         switch(apiKey.getRoleType()){
             case CLASSIC:
+                if(apiKey.isRevoked() || apiKey.getExpiresAt().isBefore(Instant.now().plusSeconds(20))){
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.setCharacterEncoding("UTF-8");
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    Map<String, Object> body = null;
+                    if(apiKey.isRevoked()){
+                        body = Map.of("error", "API_KEY_REVOKED", "message", "Your API Key has been revoked and is no longer usable.");
+                    } else if (apiKey.getExpiresAt().isBefore(Instant.now())){
+                        body = Map.of("error", "API_KEY_EXPIRED", "message", "Your API Key has expired and is no longer usable. Please contact an administrator to recycle your API Key.");
+                    }
+                    objectMapper.writeValue(response.getWriter(), body);
+                    return;
+                }
                 ApiKeyScopeSchema apiKeyScope = apiKeyScopeRepository.findById_HashedApiKey(apiKey.getHashedApiKey());
                 Long appId = apiKeyScope.getId().getAppId();
                 app = appsRpository.findById(appId).orElseThrow();
