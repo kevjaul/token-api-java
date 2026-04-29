@@ -78,7 +78,7 @@ public class ApplicationsTests {
     }
     
     @Test
-    @DirtiesContext
+    @Sql(scripts = {"data/clean.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)    
     void shouldCreateANewApplication() {
         TokenRegenerationSchema tokenRegenerationTime = new TokenRegenerationSchema(1, 12, 0);
         CreateApplicationRequest application = new CreateApplicationRequest("testApp", 15L, 0L, tokenRegenerationTime);
