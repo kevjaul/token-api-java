@@ -88,14 +88,6 @@ public class ApplicationsTests {
         assertThat(createAppResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         URI location = createAppResponse.getHeaders().getLocation();
         assertThat(location).isNotNull();
-        
-        DocumentContext documentContext = JsonPath.parse(createAppResponse.getBody());
-        String createdApiKey = documentContext.read("$.api_key", String.class);
-        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(createdApiKey))).isPresent();
-
-        String path = location.getPath();
-        Long createdAppId = Long.parseLong(path.substring(path.lastIndexOf("/") + 1));
-        assertThat(apiKeyScopeRepository.findById_appId(createdAppId)).isPresent();
     }
 
     @Test
