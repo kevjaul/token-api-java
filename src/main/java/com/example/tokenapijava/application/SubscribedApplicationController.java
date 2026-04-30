@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -104,9 +105,16 @@ public class SubscribedApplicationController {
     }
 
     @GetMapping("/list")
-    @Operation(summary = "Liste toutes les applications enregistrées.")
+    @Operation(summary = "Liste toutes les applications enregistrées.", 
+        description = "Uniquement utilisable par une clé administrateur !")
     @Tag(name = "Applications")
-    public ResponseEntity<List<AppsSchema>> listAllApplications(@PageableDefault(sort = "appName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable) {
+    @SecurityRequirement(name = "apiKeyAuth")
+    public ResponseEntity<List<AppsSchema>> listAllApplications(@PageableDefault(sort = "appName", direction = Sort.Direction.ASC) @ParameterObject Pageable pageable, Authentication auth) {
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        ApiKeySchema apiKey = principal.getApiKey();
+        if(!apiKey.getRoleType().equals(Role.ADMIN)){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         Page<AppsSchema> allApps = appsRepository.findAll(pageable);
 
         if (allApps.isEmpty()) {
@@ -122,7 +130,7 @@ public class SubscribedApplicationController {
     @SecurityRequirement(name = "apiKeyAuth")
     public ResponseEntity<?> deleteAnApplications(Authentication auth) throws SchedulerException{
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema currentLoggedApp = principal.getApp();
+        AppsSchema currentLoggedApp = principal.requireApp();
         tokenRepository.deleteAllById_AppId(currentLoggedApp.getId());
         if(scheduler.checkExists(JobKey.jobKey("regen-" + currentLoggedApp.getId()))){
             tokenService.deleteAppSchedule(currentLoggedApp.getId());

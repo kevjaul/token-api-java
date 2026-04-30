@@ -17,6 +17,7 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -31,6 +32,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.example.tokenapijava.apiKey.ApiKeyRepository;
+import com.example.tokenapijava.apiKey.Role;
 import com.example.tokenapijava.application.CreateApplicationRequest;
 import com.example.tokenapijava.application.SubscribedApplicationRepository;
 import com.example.tokenapijava.application.TokenRegenerationSchema;
@@ -72,6 +74,9 @@ public class ApplicationsTests {
     @Autowired
     TokenService tokenService;
 
+    @Value("${admin.api.key}")
+    private String adminKey;
+
     @BeforeEach
     void setUp() {
         rateLimitService.clearAll();
@@ -91,12 +96,15 @@ public class ApplicationsTests {
     }
 
     @Test
-    @Sql(scripts = {"data/clean.sql",
-                "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)    
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
+    @Sql(scripts = {"data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)    
     void shouldReturnAllApplications() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", adminKey);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
         ResponseEntity<String> allAppsResponse = restTemplate
-            .withBasicAuth("userTest1", "aaa111")
-            .getForEntity("/api/apps/list", String.class);
+            .exchange("/api/apps/list", HttpMethod.GET, request, String.class);
+
         assertThat(allAppsResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         
         DocumentContext documentContext = JsonPath.parse(allAppsResponse.getBody());
@@ -108,6 +116,19 @@ public class ApplicationsTests {
 
         JSONArray maxTokenAmounts = documentContext.read("$..max_token_value");
         assertThat(maxTokenAmounts).containsExactlyInAnyOrder(15,300,300);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)    
+    void shouldNotReturnAllApplicationsIfNotAdmin() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", "xxa");
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<String> allAppsResponse = restTemplate
+            .exchange("/api/apps/list", HttpMethod.GET, request, String.class);
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256("xxa")).get().getRoleType()).isEqualTo(Role.CLASSIC);
+        assertThat(allAppsResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test

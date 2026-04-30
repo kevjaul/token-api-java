@@ -39,7 +39,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
     }
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getServletPath().startsWith("/api/tokens/") && !request.getServletPath().startsWith("/api/apps/myApp") && !request.getServletPath().startsWith("/api/apikeys/recycle");
+        return !request.getServletPath().startsWith("/api/tokens/") && !request.getServletPath().startsWith("/api/apps/myApp") && !request.getServletPath().startsWith("/api/apikeys/recycle") && !request.getServletPath().startsWith("/api/apps/list");
     }
 
     @Override
@@ -73,11 +73,17 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                 app = appsRpository.findById(appId).orElseThrow();
                 break;
             case ADMIN:
-                if(request.getHeader("X-Target-App") == null || !appsRpository.existsById(Long.parseLong(request.getHeader("X-Target-App")))){
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    return;
+                String targetAppHeader = request.getHeader("X-Target-App"); 
+                if( targetAppHeader != null){
+                    Long targetedAppId = Long.parseLong(targetAppHeader);
+                    if(!appsRpository.existsById(targetedAppId)){
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        return;
+                    }
+                    app = appsRpository.findById(targetedAppId).orElseThrow();
+                } else {
+                    app = null;
                 }
-                app = appsRpository.findById(Long.parseLong(request.getHeader("X-Target-App"))).orElseThrow();
                 break;
             default:
                 break;
