@@ -5,10 +5,15 @@ import com.jayway.jsonpath.JsonPath;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,11 +34,15 @@ import com.example.tokenapijava.apiKey.ApiKeySchema;
 import com.example.tokenapijava.apiKey.Role;
 import com.example.tokenapijava.apiKey.Status;
 import com.example.tokenapijava.application.CreateApplicationRequest;
+import com.example.tokenapijava.application.SubscribedApplicationRepository;
 import com.example.tokenapijava.application.TokenRegenerationSchema;
+import com.example.tokenapijava.config.ApiKeyCleanupJobs;
 import com.example.tokenapijava.scope.ApiKeyScopeId;
 import com.example.tokenapijava.scope.ApiKeyScopeRepository;
 import com.example.tokenapijava.scope.ApiKeyScopeSchema;
 import com.example.tokenapijava.token.dtos.CreateApplicationUserRequest;
+import com.example.tokenapijava.token.TokenRepository;
+import com.example.tokenapijava.token.TokenService;
 import com.example.tokenapijava.utils.HashUtil;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -43,13 +52,28 @@ import com.example.tokenapijava.utils.HashUtil;
 public class ApiKeyTests {
 
     @Autowired
+    ApiKeyCleanupJobs apiKeyCleanupJobs;
+
+    @Autowired
     ApiKeyRepository apiKeyRepository;
 
     @Autowired
     ApiKeyScopeRepository apiKeyScopeRepository;
 
     @Autowired
+    Scheduler scheduler;
+
+    @Autowired
+    SubscribedApplicationRepository applicationRepository;
+
+    @Autowired
     TestRestTemplate restTemplate;
+
+    @Autowired
+    TokenRepository tokenRepository;
+
+    @Autowired
+    TokenService tokenService;
 
     @Value("${admin.api.key}")
     private String adminKeyValue;
@@ -232,5 +256,102 @@ public class ApiKeyTests {
         assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(newApiKeyValue))).isPresent();
         assertThat(apiKeyScopeRepository.findById_HashedApiKey(HashUtil.sha256(newApiKeyValue))).isPresent();
         assertThat(apiKeyScopeRepository.findById_HashedApiKey(HashUtil.sha256(newApiKeyValue)).get().getId().getAppId()).isEqualTo(1L);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    void shouldSetExpiredStateIfApiKeyExpiresAtIsDue(){
+        String apiKeyValueRotating = "xxa";
+        ApiKeySchema apiKeyRotating = apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueRotating)).get();
+        apiKeyRotating.setStatus(Status.ROTATING);
+        apiKeyRotating.setExpiresAt(Instant.now().minusSeconds(60));
+        apiKeyRepository.save(apiKeyRotating);
+
+        String apiKeyValueActive = "xxb";
+        ApiKeySchema apiKeyActive = apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueActive)).get();
+        apiKeyActive.setExpiresAt(Instant.now().minusSeconds(60));
+        apiKeyRepository.save(apiKeyActive);
+
+        String apiKeyValueUnchanged = "apiKeyForRegenTests";
+        ApiKeySchema apiKeyUnchanged = apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueUnchanged)).get();
+
+        assertThat(apiKeyRotating.getStatus()).isEqualTo(Status.ROTATING);
+        assertThat(apiKeyActive.getStatus()).isEqualTo(Status.ACTIVE);
+        assertThat(apiKeyUnchanged.getStatus()).isEqualTo(Status.ACTIVE);
+        assertThat(apiKeyRotating.getExpiresAt()).isBefore(Instant.now());
+        assertThat(apiKeyActive.getExpiresAt()).isBefore(Instant.now());
+        assertThat(apiKeyUnchanged.getExpiresAt()).isAfter(Instant.now());
+
+        apiKeyCleanupJobs.checkAndUpdateExpiredApiKeys();
+
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueRotating)).get().getStatus()).isEqualTo(Status.EXPIRED);
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueActive)).get().getStatus()).isEqualTo(Status.EXPIRED);
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueUnchanged)).get().getStatus()).isEqualTo(Status.ACTIVE);
+    }
+
+    @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD)
+    @Sql(scripts = {"data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    void shouldDeleteTooOldCLIENTApiKeys() throws SchedulerException{
+        String apiKeyValueToDelete = "xxa";
+        ApiKeySchema apiKeyToDelete = apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueToDelete)).get();
+        apiKeyToDelete.setExpiresAt(Instant.now().minus(60,ChronoUnit.DAYS));
+        apiKeyRepository.save(apiKeyToDelete);
+
+        String apiKeyValueRevoked = "xxb";
+        ApiKeySchema apiKeyRevoked = apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueRevoked)).get();
+        apiKeyRevoked.setExpiresAt(Instant.now().minus(60,ChronoUnit.DAYS));
+        apiKeyRepository.save(apiKeyRevoked);
+
+        String apiKeyValueNotToBeDeleted = "apiKeyForRegenTests";
+        ApiKeySchema apiKeyNotToBeDeleted = apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueNotToBeDeleted)).get();
+        apiKeyNotToBeDeleted.setExpiresAt(Instant.now().minus(15,ChronoUnit.DAYS));
+        apiKeyRepository.save(apiKeyNotToBeDeleted);
+
+        assertThat(apiKeyToDelete.getStatus()).isEqualTo(Status.ACTIVE);
+        assertThat(apiKeyRevoked.getStatus()).isEqualTo(Status.ACTIVE);
+        assertThat(apiKeyNotToBeDeleted.getStatus()).isEqualTo(Status.ACTIVE);
+
+        apiKeyCleanupJobs.checkAndUpdateExpiredApiKeys();
+
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueToDelete)).get().getStatus()).isEqualTo(Status.EXPIRED);
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueRevoked)).get().getStatus()).isEqualTo(Status.EXPIRED);
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueNotToBeDeleted)).get().getStatus()).isEqualTo(Status.EXPIRED);
+
+        apiKeyRevoked.setStatus(Status.REVOKED);
+        apiKeyRepository.save(apiKeyRevoked);
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueRevoked)).get().getStatus()).isEqualTo(Status.REVOKED);
+
+        apiKeyCleanupJobs.cleanupExpiredApiKeysAndApps();
+
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueToDelete)).isPresent()).isFalse();
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueRevoked)).isPresent()).isFalse();
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueNotToBeDeleted)).isPresent()).isTrue();
+    }
+
+    @Test
+    void shouldDeleteApplicationIfNoApiKeysLeft() throws SchedulerException{
+        Long appId = 1L;
+        String apiKeyValueToDelete = "xxa";
+                
+        tokenService.scheduleAppJob(appId, 30L);
+
+        ApiKeySchema apiKeyToDelete = apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueToDelete)).get();
+        apiKeyToDelete.setExpiresAt(Instant.now().minus(60,ChronoUnit.DAYS));
+        apiKeyRepository.save(apiKeyToDelete);
+
+        apiKeyCleanupJobs.checkAndUpdateExpiredApiKeys();
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueToDelete)).get().getStatus()).isEqualTo(Status.EXPIRED);
+
+        apiKeyCleanupJobs.cleanupExpiredApiKeysAndApps();
+
+        // No more DB entries
+        assertThat(tokenRepository.findAllById_AppId(appId)).isEmpty();
+        assertThat(applicationRepository.findById(appId)).isEmpty();
+        assertThat(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValueToDelete))).isEmpty();
+        assertThat(apiKeyScopeRepository.findAllById_appId(appId)).isEmpty();
+        // No more job in scheduler
+        assertThat(scheduler.checkExists(JobKey.jobKey("regen-" + appId))).isFalse();
     }
 }

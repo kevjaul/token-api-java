@@ -47,9 +47,12 @@ Each API key can be in one of the following states:
 
 - **`Status.ACTIVE`** → On API key creation, fully usable.  
 - **`Status.ROTATING`** → Take this state when the API key is used for the `/api/apikeys/recycle` route. **Is still usable** but only for a grace period of 24 hours.
-- **`Status.EXPIRED`** → Automatically set by a daily scheduled job. Set `Status.EXPIRED` for every key which has her `expiresAt` Instant value lower than Instant.now() when the job is running. With this state, the API key is **no longer usable**.  
+- **`Status.EXPIRED`** → Automatically set by a daily scheduled job (`cleanupExpiredApiKeysAndApps()`). Set `Status.EXPIRED` for every key which has her `expiresAt` Instant value lower than Instant.now() when the job is running. With this state, the API key is **no longer usable**.  
 - **`Status.REVOKED`** → Manually disabled with immediate effect. The API key is **no longer usable**.
 
+API keys that remain in `Status.EXPIRED` or `Status.REVOKED` for more than **30 days** are automatically deleted.
+
+If **an application no longer has any associated API keys** (after cleanup), it is automatically **removed along with its related datas**.
 
 ### `Role.CLASSIC` key rotation
 

@@ -121,7 +121,6 @@ Tests include:
   * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
   * Prometheus ready endpoint
 * CI/CD release note
-* 1 per day job to set expires key and delete unused app (expiresAt/revoked)
 * Logs: [Timestamp][hashedApiKey.substring(0,12)/ADMIN]([for AppId: (if ADMIN)]) -> Action processed
 * (Collection Postman ?)
 
