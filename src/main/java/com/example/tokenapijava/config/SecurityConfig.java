@@ -50,7 +50,7 @@ public class SecurityConfig {
 
             .info(new Info()
                 .title("Token API")
-                .version("1.1.1")
+                .version("1.2.1")
                 .description("""
                     API de gestion de tokens. (DEMONSTRATION)
 
@@ -91,11 +91,11 @@ public class SecurityConfig {
     @Order(1)
     SecurityFilterChain apiKeyFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher( "/api/tokens/**","/api/apps/myApp")
+            .securityMatcher( "/api/**")
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(request -> request
-                .requestMatchers("/api/tokens/**","/api/apps/myApp")
-                .authenticated())
+                .requestMatchers("/api/apps/register").permitAll()
+                .anyRequest().authenticated())
             .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(rateLimitFilter, ApiKeyFilter.class);
         return http.build();

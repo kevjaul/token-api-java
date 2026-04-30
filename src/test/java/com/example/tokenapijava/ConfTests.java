@@ -108,7 +108,7 @@ public class ConfTests {
     @Test
     @DirtiesContext(methodMode = DirtiesContext.MethodMode.BEFORE_METHOD) // Required to fully setup default admin key on app restart
     @Sql(scripts = {"data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-    void shouldReturnUnauthorizedIfAnADMINApiKeyIsUsedWithoutXTargetAppHeader() {
+    void shouldReturnUnauthorizedIfAnADMINApiKeyIsUsedWithoutXTargetAppHeaderOnaRouteWhichRequiresIt() {
         CreateApplicationUserRequest applicationUser = new CreateApplicationUserRequest("userTest1", 3L);
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-Api-Key", adminKey);

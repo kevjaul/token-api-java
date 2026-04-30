@@ -46,7 +46,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> createAnApplicationUser(@RequestBody CreateApplicationUserRequest applicationUser, UriComponentsBuilder Ucb,Authentication auth ) {
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema app = principal.getApp();
+        AppsSchema app = principal.requireApp();
         UserTokenId userId = new UserTokenId(applicationUser.userId(),app.getId());
         if(tokenRepository.existsById(userId)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("User already exists");
@@ -68,7 +68,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> getUserTokensAmount(@PathVariable String userId, Authentication auth){
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema app = principal.getApp();
+        AppsSchema app = principal.requireApp();
         UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return ResponseEntity.ok(userToken.getTokenAmount());
@@ -79,7 +79,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> addUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth){
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema app = principal.getApp();
+        AppsSchema app = principal.requireApp();
         UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (manageTokens.amount() <= 0){
@@ -103,7 +103,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> subtractUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth) {
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema app = principal.getApp();
+        AppsSchema app = principal.requireApp();
         UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (manageTokens.amount() <= 0){
@@ -127,7 +127,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> regenerateTokensForAllUsers(@RequestBody ManageTokensRequest manageTokens, Authentication auth) {
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema app = principal.getApp();
+        AppsSchema app = principal.requireApp();
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should add at least 1 token");
         }
@@ -140,7 +140,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteUserTokens(@PathVariable String userId, Authentication auth) {
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema app = principal.getApp();
+        AppsSchema app = principal.requireApp();
         UserTokenSchema userToken = tokenRepository.findById_AppIdAndId_UserId(app.getId(), userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NO_CONTENT));
         if(userToken != null){
             tokenRepository.delete(userToken);
@@ -154,7 +154,7 @@ public class TokenController {
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteAllUsersTokens(Authentication auth) {
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema app = principal.getApp();
+        AppsSchema app = principal.requireApp();
         tokenRepository.deleteAllById_AppId(app.getId());
         return ResponseEntity.noContent().build();
     }

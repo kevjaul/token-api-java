@@ -43,7 +43,7 @@ public class ApiKeyController {
     @SecurityRequirement(name = "apiKeyAuth")
     public ResponseEntity<?> recycleApiKey(Authentication auth) {
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
-        AppsSchema app = principal.getApp();
+        AppsSchema app = principal.requireApp();
         ApiKeySchema currentApiKey  = principal.getApiKey();
         if(currentApiKey.getRoleType() != Role.ADMIN){
             if(currentApiKey.getStatus() != Status.ACTIVE){
