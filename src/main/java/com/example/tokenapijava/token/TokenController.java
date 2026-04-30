@@ -22,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.tokenapijava.application.AppsSchema;
+import com.example.tokenapijava.config.ApiKeyAuthenticationPrincipal;
 import com.example.tokenapijava.token.dtos.CreateApplicationUserRequest;
 import com.example.tokenapijava.token.dtos.ManageTokensRequest;
 
@@ -44,7 +45,8 @@ public class TokenController {
     @Operation(summary = "Enregistre un nouvel utilisateur avec un nombre de tokens initial.")
     @Tag(name = "Tokens")
     public ResponseEntity<?> createAnApplicationUser(@RequestBody CreateApplicationUserRequest applicationUser, UriComponentsBuilder Ucb,Authentication auth ) {
-        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema app = principal.getApp();
         UserTokenId userId = new UserTokenId(applicationUser.userId(),app.getId());
         if(tokenRepository.existsById(userId)){
             return ResponseEntity.status(HttpStatus.CONFLICT).body("User already exists");
@@ -65,7 +67,8 @@ public class TokenController {
     @Operation(summary = "Récupère le nombre de tokens d'un utilisateur.")
     @Tag(name = "Tokens")
     public ResponseEntity<?> getUserTokensAmount(@PathVariable String userId, Authentication auth){
-        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema app = principal.getApp();
         UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return ResponseEntity.ok(userToken.getTokenAmount());
@@ -75,7 +78,8 @@ public class TokenController {
     @Operation(summary = "Ajoute des tokens à un utilisateur.")
     @Tag(name = "Tokens")
     public ResponseEntity<?> addUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth){
-        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema app = principal.getApp();
         UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (manageTokens.amount() <= 0){
@@ -98,7 +102,8 @@ public class TokenController {
     @Operation(summary = "Enlève des tokens à un utilisateur.")
     @Tag(name = "Tokens")
     public ResponseEntity<?> subtractUserTokens(@PathVariable String userId, @RequestBody ManageTokensRequest manageTokens, Authentication auth) {
-        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema app = principal.getApp();
         UserTokenId id = new UserTokenId(userId,app.getId());
         UserTokenSchema userToken = tokenRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (manageTokens.amount() <= 0){
@@ -121,7 +126,8 @@ public class TokenController {
     @Operation(summary = "Rajoute des tokens à tous les utilisateurs d'une application.")
     @Tag(name = "Tokens")
     public ResponseEntity<?> regenerateTokensForAllUsers(@RequestBody ManageTokensRequest manageTokens, Authentication auth) {
-        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema app = principal.getApp();
         if (manageTokens.amount() <= 0){
             return ResponseEntity.badRequest().body("You should add at least 1 token");
         }
@@ -133,7 +139,8 @@ public class TokenController {
     @Operation(summary = "Supprime un utilisateur.")
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteUserTokens(@PathVariable String userId, Authentication auth) {
-        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema app = principal.getApp();
         UserTokenSchema userToken = tokenRepository.findById_AppIdAndId_UserId(app.getId(), userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NO_CONTENT));
         if(userToken != null){
             tokenRepository.delete(userToken);
@@ -146,7 +153,8 @@ public class TokenController {
     @Operation(summary = "Supprime tous les utilisateurs d'une application.")
     @Tag(name = "Tokens")
     public ResponseEntity<?> deleteAllUsersTokens(Authentication auth) {
-        AppsSchema app = (AppsSchema) auth.getPrincipal();
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema app = principal.getApp();
         tokenRepository.deleteAllById_AppId(app.getId());
         return ResponseEntity.noContent().build();
     }

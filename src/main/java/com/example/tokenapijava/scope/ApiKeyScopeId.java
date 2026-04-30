@@ -15,6 +15,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 @Embeddable
 @Table(name = "SCOPES")
 @Access(AccessType.FIELD)

@@ -61,10 +61,10 @@ http://localhost:5001/swagger-ui/index.html
 
 ### 1. Get an application API Key
 
-All `/api/tokens/**` routes require:
+All `/api/tokens/**` and `/api/apikeys/` routes require:
 
 ```
-X-Api-Key: your-api-key
+X-Api-Key header: your-api-key
 ```
 
 (Generated from `/api/apps/register` route)
@@ -97,21 +97,6 @@ POST /api/tokens/regenerate
 
 ---
 
-## 🛡️ Rate limiting
-
-Rate limiting is currently in-memory (Caffeine)
-State isn't database persistent but is automatically reset on application restart.
-
-In a production  or a more professionnal environment, please consider Redis-backed Bucket4J.
-
-Rate Limiting global :
-  * 20 requests GET / POST / PUT a day
-  * 5 requests DELETE a day
-  * Use of Token Bucket strategy with continuous refill (1d)
-  * Limitation by API Key use
-
----
-
 ## 🧪 Testing
 
 Run tests with:
@@ -122,7 +107,7 @@ Run tests with:
 
 Tests include:
 
-* API key validation
+* API key validation and recycling
 * Token limits
 * User creation conflicts
 * Token regeneration logic
@@ -136,11 +121,13 @@ Tests include:
   * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
   * Prometheus ready endpoint
 * CI/CD release note
-* Recycle ApiKeys (expiresAt/revoked)
 * Logs: [Timestamp][hashedApiKey.substring(0,12)/ADMIN]([for AppId: (if ADMIN)]) -> Action processed
 * (Collection Postman ?)
 
 ---
+## 📚 Documentation
+
+- [API Keys Lifecycle & Security](./API_KEYS.md)
 
 ## 👨‍💻 Author
 

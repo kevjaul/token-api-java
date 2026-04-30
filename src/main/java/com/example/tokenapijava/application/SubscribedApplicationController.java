@@ -35,6 +35,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.example.tokenapijava.apiKey.ApiKeyRepository;
 import com.example.tokenapijava.apiKey.ApiKeySchema;
 import com.example.tokenapijava.apiKey.Role;
+import com.example.tokenapijava.apiKey.Status;
+import com.example.tokenapijava.config.ApiKeyAuthenticationPrincipal;
 import com.example.tokenapijava.scope.ApiKeyScopeId;
 import com.example.tokenapijava.scope.ApiKeyScopeRepository;
 import com.example.tokenapijava.scope.ApiKeyScopeSchema;
@@ -84,7 +86,7 @@ public class SubscribedApplicationController {
         AppsSchema newApp = new AppsSchema(null, application.appName(), application.maxTokenAmount(), application.minTokenAmount(), application.tokenRegenerationTime());
         AppsSchema savedApp = appsRepository.save(newApp);
 
-        ApiKeySchema newApiKey = new ApiKeySchema(HashUtil.sha256(apiKey), Role.CLASSIC, Instant.now(), Instant.now().plusSeconds(60*60*24*30), false);
+        ApiKeySchema newApiKey = new ApiKeySchema(HashUtil.sha256(apiKey), Role.CLASSIC, Instant.now(), Instant.now().plusSeconds(60*60*24*30), Status.ACTIVE);
         ApiKeyScopeSchema keyScope = new ApiKeyScopeSchema(new ApiKeyScopeId(newApiKey.getHashedApiKey(), savedApp.getId()));
         apiKeyRepository.save(newApiKey);
         apiKeyScopeRepository.save(keyScope);
@@ -119,14 +121,17 @@ public class SubscribedApplicationController {
     @Tag(name = "Applications")
     @SecurityRequirement(name = "apiKeyAuth")
     public ResponseEntity<?> deleteAnApplications(Authentication auth) throws SchedulerException{
-        AppsSchema currentLoggedApp = (AppsSchema) auth.getPrincipal();
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema currentLoggedApp = principal.getApp();
         tokenRepository.deleteAllById_AppId(currentLoggedApp.getId());
         if(scheduler.checkExists(JobKey.jobKey("regen-" + currentLoggedApp.getId()))){
             tokenService.deleteAppSchedule(currentLoggedApp.getId());
         }
-        ApiKeyScopeSchema keyScope = apiKeyScopeRepository.findById_appId(currentLoggedApp.getId()).orElseThrow();
-        apiKeyScopeRepository.delete(keyScope);
-        apiKeyRepository.deleteAllByHashedApiKey(keyScope.getId().getHashedApiKey());
+        List<ApiKeyScopeSchema> keyScopes = apiKeyScopeRepository.findAllById_appId(currentLoggedApp.getId());
+        apiKeyScopeRepository.deleteAllById_appId(currentLoggedApp.getId());
+        for (ApiKeyScopeSchema keyScope : keyScopes) {
+            apiKeyRepository.deleteAllByHashedApiKey(keyScope.getId().getHashedApiKey());
+        }
         appsRepository.delete(currentLoggedApp);
         return ResponseEntity.noContent().build();
     }

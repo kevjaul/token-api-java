@@ -15,6 +15,7 @@ import lombok.*;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode
 @Table(name = "API_KEYS_SCOPES")
 @Access(AccessType.FIELD)
 public class ApiKeyScopeSchema implements Serializable{

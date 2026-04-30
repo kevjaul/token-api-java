@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.example.tokenapijava.apiKey.ApiKeySchema;
 import com.example.tokenapijava.apiKey.Role;
+import com.example.tokenapijava.apiKey.Status;
 import com.example.tokenapijava.utils.HashUtil;
 
 @JsonTest
@@ -35,8 +36,8 @@ class ApiKeysJsonTests {
     @BeforeEach
     void setUp(){
         apiKeys = List.of(
-            new ApiKeySchema(HashUtil.sha256("xxa"), Role.CLASSIC, Instant.parse("2026-04-27T00:00:00Z"),Instant.parse("2026-04-28T00:00:00Z"), false),
-            new ApiKeySchema(HashUtil.sha256("xxb"), Role.CLASSIC, Instant.parse("2026-04-27T00:00:00Z"),Instant.parse("2026-04-28T00:00:00Z"), false)
+            new ApiKeySchema(HashUtil.sha256("xxa"), Role.CLASSIC, Instant.parse("2026-04-27T00:00:00Z"),Instant.parse("2026-04-28T00:00:00Z"), Status.ACTIVE),
+            new ApiKeySchema(HashUtil.sha256("xxb"), Role.CLASSIC, Instant.parse("2026-04-27T00:00:00Z"),Instant.parse("2026-04-28T00:00:00Z"), Status.ACTIVE)
         );
     }
 
@@ -52,8 +53,8 @@ class ApiKeysJsonTests {
         assertThat(json.write(apiKey)).extractingJsonPathStringValue("@.createdAt").isEqualTo("2026-04-27T00:00:00Z");
         assertThat(json.write(apiKey)).hasJsonPathStringValue("@.expiresAt");
         assertThat(json.write(apiKey)).extractingJsonPathStringValue("@.expiresAt").isEqualTo("2026-04-28T00:00:00Z");
-        assertThat(json.write(apiKey)).hasJsonPathBooleanValue("@.revoked");
-        assertThat(json.write(apiKey)).extractingJsonPathBooleanValue("@.revoked").isEqualTo(false);
+        assertThat(json.write(apiKey)).hasJsonPathStringValue("@.status");
+        assertThat(json.write(apiKey)).extractingJsonPathStringValue("@.status").isEqualTo("ACTIVE");
     }
 
     @Test
