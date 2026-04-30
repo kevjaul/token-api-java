@@ -132,7 +132,7 @@ public class ApplicationsTests {
         assertThat(tokenRepository.findAllById_AppId(appId)).isEmpty();
         assertThat(applicationRepository.findById(appId)).isEmpty();
         assertThat(apiKeyRepository.findByHashedApiKey(hashedApiKey)).isEmpty();
-        assertThat(apiKeyScopeRepository.findById_HashedApiKey(hashedApiKey)).isNull();
+        assertThat(apiKeyScopeRepository.findAllById_appId(appId)).isEmpty();
         // No more job in scheduler
         assertThat(scheduler.checkExists(JobKey.jobKey("regen-" + appId))).isFalse();
     }

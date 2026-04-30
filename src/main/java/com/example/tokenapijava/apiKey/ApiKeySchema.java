@@ -39,5 +39,8 @@ public class ApiKeySchema {
 
     private Instant expiresAt;
 
-    private boolean revoked;
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "KEY_STATUS")
+    private Status status;
 }

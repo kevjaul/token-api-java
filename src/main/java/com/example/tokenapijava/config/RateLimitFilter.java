@@ -67,7 +67,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
             ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> body = Map.of("error", "Too many requests", "message", "Rate limit exceeded. Please wait for " + waitForRefill + " seconds before retrying.");
+            Map<String, Object> body = Map.of("error", "TOO_MANY_REQUESTS", "message", "Rate limit exceeded. Please wait for " + waitForRefill + " seconds before retrying.");
             objectMapper.writeValue(response.getWriter(), body);
         } 
     }

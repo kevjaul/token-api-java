@@ -31,7 +31,7 @@ public class AdminKeyInitializer implements CommandLineRunner{
         boolean adminKeyAlreadyExists = apiKeyRepository.existsByHashedApiKeyAndRoleType(hashAdminKey, Role.ADMIN);
 
         if(!adminKeyAlreadyExists){
-            ApiKeySchema adminKeySchema = new ApiKeySchema(hashAdminKey, Role.ADMIN, Instant.now(), Instant.now().plusSeconds(60*60*24*30), false);
+            ApiKeySchema adminKeySchema = new ApiKeySchema(hashAdminKey, Role.ADMIN, Instant.now(), null, Status.ACTIVE);
             apiKeyRepository.save(adminKeySchema);
             System.out.println("Admin key created.");
         } else {
