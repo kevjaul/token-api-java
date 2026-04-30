@@ -37,16 +37,16 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         this.apiKeyScopeRepository = apiKeyScopeRepository;
         this.appsRpository = repository;
     }
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getServletPath().startsWith("/api/tokens/") && !request.getServletPath().startsWith("/api/apps/myApp") && !request.getServletPath().startsWith("/api/apikeys/recycle") && !request.getServletPath().startsWith("/api/apps/list");
-    }
 
     @Override
     protected void doFilterInternal( HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException{
         String apiKeyValue = request.getHeader("X-Api-Key");
-       
-        if (apiKeyValue == null || apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValue)).isEmpty()) {
+        if(apiKeyValue == null){
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if(apiKeyRepository.findByHashedApiKey(HashUtil.sha256(apiKeyValue)).isEmpty()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }

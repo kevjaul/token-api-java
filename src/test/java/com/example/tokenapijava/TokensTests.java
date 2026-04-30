@@ -89,7 +89,7 @@ public class TokensTests {
         ResponseEntity<Void> createUserResponse = restTemplate
             .withBasicAuth("userTest1", "aaa111")
             .postForEntity("/api/tokens/register", applicationUser, Void.class);
-        assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(createUserResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test

@@ -91,11 +91,11 @@ public class SecurityConfig {
     @Order(1)
     SecurityFilterChain apiKeyFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher( "/api/tokens/**","/api/apps/myApp")
+            .securityMatcher( "/api/**")
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(request -> request
-                .requestMatchers("/api/tokens/**","/api/apps/myApp")
-                .authenticated())
+                .requestMatchers("/api/apps/register").permitAll()
+                .anyRequest().authenticated())
             .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(rateLimitFilter, ApiKeyFilter.class);
         return http.build();
