@@ -8,6 +8,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -22,7 +24,7 @@ import com.example.tokenapijava.scope.ApiKeyScopeRepository;
 import com.example.tokenapijava.scope.ApiKeyScopeSchema;
 import com.example.tokenapijava.utils.HashUtil;
 
-
+@Slf4j
 @RestController
 @RequestMapping("/api/apikeys")
 @Tag(name = "API Keys", description="Gestion des clés API")
@@ -66,10 +68,10 @@ public class ApiKeyController {
         Instant newExpiresAt = Instant.now().plusSeconds(60*60*24*30).truncatedTo(ChronoUnit.SECONDS);
         ApiKeySchema newApiKey = new ApiKeySchema(HashUtil.sha256(newApiKeyValue), Role.CLASSIC, Instant.now(), newExpiresAt, Status.ACTIVE);
         apiKeyRepository.save(newApiKey);
-        
+        log.info("Recycle key: From {}... to {}...", currentApiKey.getHashedApiKey().substring(0,12), newApiKey.getHashedApiKey().substring(0,12));
         ApiKeyScopeSchema newKeyScope = new ApiKeyScopeSchema(new ApiKeyScopeId(newApiKey.getHashedApiKey(), app.getId()));
         apiKeyScopeRepository.save(newKeyScope);
-
+        log.info("Recycle key: New scope for {}... on app {}", newApiKey.getHashedApiKey().substring(0,12), app.getId());
         return ResponseEntity.ok().body("{\"new_api_key\": \"" + newApiKeyValue + "\", \"expiresAt\": \""+ newExpiresAt +"\"}");
     }
 }

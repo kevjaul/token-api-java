@@ -2,6 +2,8 @@ package com.example.tokenapijava.token;
 
 import java.util.concurrent.TimeUnit;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import com.example.tokenapijava.application.AppsSchema;
 
+
+@Slf4j
 @Service
 public class TokenService {
 
@@ -84,12 +88,12 @@ public class TokenService {
         } else {
             scheduler.scheduleJob(job, trigger);    
         }
-        System.out.println("Job created for application " + appId + " with job key regen-" + appId);
+        log.info("Scheduled Job: Job created for application {} with job key regen-{}", appId, appId);
     }
 
     public void deleteAppSchedule(Long appId) throws SchedulerException {
         JobKey jobKey = JobKey.jobKey("regen-" + appId);
         scheduler.deleteJob(jobKey);
-        System.out.println("Job deleted for application " + appId + " with job key regen-" + appId);   
+        log.info("Scheduled Job: Job deleted for application {} with job key regen-{}", appId, appId);
     }
 }

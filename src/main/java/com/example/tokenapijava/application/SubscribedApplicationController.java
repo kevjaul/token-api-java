@@ -12,6 +12,8 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
@@ -45,6 +47,7 @@ import com.example.tokenapijava.token.TokenRepository;
 import com.example.tokenapijava.token.TokenService;
 import com.example.tokenapijava.utils.HashUtil;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/apps")
 @Tag(name = "Applications", description="Gestion des applications")
@@ -86,10 +89,11 @@ public class SubscribedApplicationController {
         String apiKey = UUID.randomUUID().toString();
         AppsSchema newApp = new AppsSchema(null, application.appName(), application.maxTokenAmount(), application.minTokenAmount(), application.tokenRegenerationTime());
         AppsSchema savedApp = appsRepository.save(newApp);
-
+        log.info("New app registered: With appId={}", savedApp.getId());
         ApiKeySchema newApiKey = new ApiKeySchema(HashUtil.sha256(apiKey), Role.CLASSIC, Instant.now(), Instant.now().plusSeconds(60*60*24*30), Status.ACTIVE);
         ApiKeyScopeSchema keyScope = new ApiKeyScopeSchema(new ApiKeyScopeId(newApiKey.getHashedApiKey(), savedApp.getId()));
         apiKeyRepository.save(newApiKey);
+        log.info("New app registered: Linked to hashedApiKey={}...", newApiKey.getHashedApiKey().substring(0,12));
         apiKeyScopeRepository.save(keyScope);
 
         URI locationOfNewApp = Ucb
@@ -101,6 +105,7 @@ public class SubscribedApplicationController {
             + savedApp.getTokenRegenerationTime().getHours() * 60
             + savedApp.getTokenRegenerationTime().getMins();
         tokenService.scheduleAppJob(savedApp.getId(), intervalMinutes);
+
         return ResponseEntity.created(locationOfNewApp).body("{\"api_key\": \"" + apiKey + "\"}");
     }
 
@@ -113,10 +118,11 @@ public class SubscribedApplicationController {
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
         ApiKeySchema apiKey = principal.getApiKey();
         if(!apiKey.getRoleType().equals(Role.ADMIN)){
+            log.warn("Applications listing: User with hashedApiKey={}... is trying to list all applications.", apiKey.getHashedApiKey().substring(0,12));
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Page<AppsSchema> allApps = appsRepository.findAll(pageable);
-
+        log.info("Applications listing: An ADMIN has listed all applications.");
         if (allApps.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
@@ -132,6 +138,7 @@ public class SubscribedApplicationController {
         ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
         AppsSchema currentLoggedApp = principal.requireApp();
         tokenRepository.deleteAllById_AppId(currentLoggedApp.getId());
+        log.info("Application deleted: All users deleted for application {}", currentLoggedApp.getAppName());
         if(scheduler.checkExists(JobKey.jobKey("regen-" + currentLoggedApp.getId()))){
             tokenService.deleteAppSchedule(currentLoggedApp.getId());
         }
@@ -140,7 +147,9 @@ public class SubscribedApplicationController {
         for (ApiKeyScopeSchema keyScope : keyScopes) {
             apiKeyRepository.deleteAllByHashedApiKey(keyScope.getId().getHashedApiKey());
         }
+        log.info("Application deleted: All keys linked to application {} deleted", currentLoggedApp.getAppName());
         appsRepository.delete(currentLoggedApp);
+        log.info("Application deleted: Application {} deleted", currentLoggedApp.getAppName());
         return ResponseEntity.noContent().build();
     }
 }

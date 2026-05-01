@@ -5,6 +5,7 @@ import java.util.List;
 import java.time.temporal.ChronoUnit;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
@@ -25,6 +26,7 @@ import com.example.tokenapijava.token.TokenRepository;
 import com.example.tokenapijava.token.TokenService;
 
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ApiKeyCleanupJobs {
@@ -44,7 +46,7 @@ public class ApiKeyCleanupJobs {
     @Scheduled(cron = "0 0 3 * * *")
     @Transactional
     public void cleanupExpiredApiKeysAndApps() throws SchedulerException {
-        System.out.println("Running cleanup job.");
+        log.info("Core Scheduled Job: Running cleanup job.");
         Instant now = Instant.now();
         Instant deleteThreshold = now.minus(30, ChronoUnit.DAYS);
 
@@ -57,6 +59,7 @@ public class ApiKeyCleanupJobs {
             apiKeyScopeRepository.deleteById_HashedApiKey(key.getHashedApiKey());
             if(key.getRoleType() != Role.ADMIN){ // Do not delete admin keys
                 apiKeyRepository.delete(key);    
+                log.info("Core Scheduled Job: {} key deleted: {}...", key.getStatus(), key.getHashedApiKey().substring(0, 12));
             }
         }
         
@@ -68,20 +71,23 @@ public class ApiKeyCleanupJobs {
                 apiKeyScopeRepository.existsById_appId(app.getId());
 
             if (!hasScopes) {
+                log.info("Core Scheduled Job: Application with appId={} doesn't have linked scope anymore. Deleting application...", app.getId());
                 tokenRepository.deleteAllById_AppId(app.getId());
+                log.info("Core Scheduled Job: All users deleted for application {} with appId={}", app.getAppName(), app.getId());
                 if(scheduler.checkExists(JobKey.jobKey("regen-" + app.getId()))){
                     tokenService.deleteAppSchedule(app.getId());
                 }
                 appsRepository.delete(app);
+                log.info("Core Scheduled Job: Application {} with appId={} deleted", app.getAppName(), app.getId());
             }
         }
-        System.out.println("Finished cleanup job.");
+        log.info("Core Scheduled Job: Finished cleanup job.");
     }
 
     @Scheduled(cron = "0 0 2 * * *")
     @Transactional
     public void checkAndUpdateExpiredApiKeys(){
-        System.out.println("Running expired api keys check job.");
+        log.info("Core Scheduled Job: Running expired api keys check job.");    
         Instant now = Instant.now();
 
         List<ApiKeySchema> keysToExpire =
@@ -91,9 +97,11 @@ public class ApiKeyCleanupJobs {
 
         for (ApiKeySchema key : keysToExpire) {
             if (key.getRoleType() != Role.ADMIN) {
+                Status currentStatus = key.getStatus();
                 key.setStatus(Status.EXPIRED);
+                log.info("Core Scheduled Job: {}... key expired, set is status from {} to {}", key.getHashedApiKey().substring(0, 12), currentStatus, key.getStatus());
             }
         }
-        System.out.println("Finished expired api keys check job.");
+        log.info("Core Scheduled Job: Finished expired api keys check job.");
     }
 }
