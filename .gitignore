@@ -36,6 +36,5 @@ out/
 ### VS Code ###
 .vscode/
 
-
-### Secrets (sensible) ###
-application.yml
+### Logs ###
+logs/

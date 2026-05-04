@@ -18,38 +18,76 @@ Each application can manage its own users and token balances securely using an A
 
 ---
 
-## ⚙️ Developer Setup
+## ⚙️ Application Setup
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-repo/token-api-java.git
+git clone https://github.com/kevjaul/token-api-java.git
 cd token-api-java
 ```
-
 ---
 
-### 2. Create a PostgresSQL Docker container
+### 2. Production environment
+
+#### 2.1 Setup environments variables
+
+Before starting the application you must have to define a set of property in your production grade environment:
+
+```
+PORT: Port used for application (By default on port 5001)
+
+SPRING_DATASOURCE_URL: URL to access to your database
+SPRING_DATASOURCE_USERNAME: Login uses for your production database
+SPRING_DATASOURCE_PASSWORD: Password uses for your production database
+
+LOGGING_FILE_PATH: Indicate where the application logs must be saved. Make sure the application has sufficient rights to edit the log directory content. (By default on ./logs)
+
+ADMIN_API_KEY: Define an admin level key which will be used for managing all saved applications.
+
+SPRING_SECURITY_USER: 
+SPRING_SECURITY_PASSWORD:
+```
+
+#### 2.2 Generate and launch JAR file
+
+In project directory launch:
+```bash
+./gradlew clean bootJar -x test
+```
+
+Then you will find the generated JAR in : `./build/libs/app.jar`
+
+Launch the application:
+```bash
+cd ./build/libs
+chmod +x app.jar
+java -jar app.jar
+```
+#### Access the application
+Open your favorite browser, then go to:
+```
+http(s)://YOUR_HOST_URL:{PORT}/swagger-ui/index.html
+```
+Enjoy ! 
+
+### 3. Development environment
+
+#### 3.1 Create a PostgresSQL Docker container
+
+Start your docker session, then run:
 
 ```bash
 docker run -d --name token-api-dev -e POSTGRES_DB=token_db -e POSTGRES_USER=appuser -e POSTGRES_PASSWORD=apppassword -p 5432:5432 postgres:16
 ```
 
-### 3. Run the application in development mode
+#### 3.2 Run the application in development mode
 
 ```bash
 ./gradlew bootDev
 ```
 
 API will be available at:
-
-```
-http://localhost:5001
-```
-
----
-
-### 4. Swagger documentation
 
 ```
 http://localhost:5001/swagger-ui/index.html
@@ -121,7 +159,7 @@ Tests include:
   * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
   * Prometheus ready endpoint
 * CI/CD release note
-* Logs: [Timestamp][hashedApiKey.substring(0,12)/ADMIN]([for AppId: (if ADMIN)]) -> Action processed
+* Complete Swagger definitions for all methods (intented params and possible response status codes) ?
 * (Collection Postman ?)
 
 ---

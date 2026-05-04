@@ -2,6 +2,7 @@ package com.example.tokenapijava.apiKey;
 
 import java.time.Instant;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.tokenapijava.utils.HashUtil;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AdminKeyInitializer implements CommandLineRunner{
@@ -33,9 +35,9 @@ public class AdminKeyInitializer implements CommandLineRunner{
         if(!adminKeyAlreadyExists){
             ApiKeySchema adminKeySchema = new ApiKeySchema(hashAdminKey, Role.ADMIN, Instant.now(), null, Status.ACTIVE);
             apiKeyRepository.save(adminKeySchema);
-            System.out.println("Admin key created.");
+            log.info("Admin key created.");
         } else {
-            System.out.println("Admin key already exists. Skip task.");
+            log.info("Admin key already exists. Skip task.");
         }
     }
 }
