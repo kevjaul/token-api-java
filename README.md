@@ -159,9 +159,7 @@ Tests include:
   * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
   * Prometheus ready endpoint
 * CI/CD release note
-* Entête swagger pour les sorties attendues sur toutes les routes + params ?
-  * Fix: SYSTEM prefix par example pour les jobs core, les lancements de job ou de l'app
-  * Stockage dans dossier /logs journalisé (voir ChatGPT)
+* Complete Swagger definitions for all methods (intented params and possible response status codes) ?
 * (Collection Postman ?)
 
 ---
