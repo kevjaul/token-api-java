@@ -50,7 +50,7 @@ public class SecurityConfig {
 
             .info(new Info()
                 .title("Token API")
-                .version("1.2.2")
+                .version("1.2.3")
                 .description("""
                     API de gestion de tokens. (DEMONSTRATION)
 
@@ -59,6 +59,7 @@ public class SecurityConfig {
                         - 5 requêtes DELETE par jour
                         - Stratégie de limitation par Token Bucket avec fenêtre glissante (1j)
                         - Limitation par API Key
+                        - API Key valable 30 jours (avant recyclage)
                 """)
             );
     }
