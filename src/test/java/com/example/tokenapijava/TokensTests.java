@@ -5,6 +5,9 @@ import com.jayway.jsonpath.JsonPath;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -415,5 +418,42 @@ public class TokensTests {
         assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(tokenRepository.findAllById_AppId(1L)).isEmpty();
     }
-    
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql",
+        "data/usersTokensTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes 
+    void shouldListAllUsers(){
+        String apiKey = "xxa";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", apiKey);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<String> listResponse = restTemplate
+            .exchange("/api/tokens/list", HttpMethod.GET, request, String.class);
+        assertThat(listResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        DocumentContext documentContext = JsonPath.parse(listResponse.getBody());
+
+        int usersCount = documentContext.read("$.length()");
+        assertThat(usersCount).isEqualTo(2);
+        
+        List<String> usersIds = documentContext.read("$..id.userId");
+        assertThat(usersIds).containsExactlyInAnyOrder("userTest1","userTest3");
+
+        Set<Integer> usersIdLinkedAppId = new HashSet<>(documentContext.read("$..id.appId"));
+        assertThat(usersIdLinkedAppId).containsExactly(1);
+    }
+
+    @Test
+    @Sql(scripts = {"data/clean.sql",
+        "data/applicationsTestDatas.sql"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD) //Register a valid API key for testing purposes
+    void shoulReturnNoContentIfNoUserRegistered(){
+        String apiKey = "xxa";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Api-Key", apiKey);
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+        ResponseEntity<String> listResponse = restTemplate
+            .exchange("/api/tokens/list", HttpMethod.GET, request, String.class);
+        assertThat(listResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
 }

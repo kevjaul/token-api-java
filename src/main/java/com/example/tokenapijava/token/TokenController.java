@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 
 import java.net.URI;
+import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -173,5 +174,17 @@ public class TokenController {
         return ResponseEntity.noContent().build();
     }
     
+    @GetMapping("/list")
+    @Operation(summary = "Liste tous les utilisateurs d'une application.")
+    @Tag(name = "Tokens")
+    public ResponseEntity<List<UserTokenSchema>> listAllUsersTokens(Authentication auth) {
+        ApiKeyAuthenticationPrincipal principal = (ApiKeyAuthenticationPrincipal) auth.getPrincipal();
+        AppsSchema app = principal.requireApp();
+        List<UserTokenSchema> allTokens = tokenRepository.findAllById_AppId(app.getId());
+        if(allTokens.isEmpty()){
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok().body(allTokens);
+    }
     
 }

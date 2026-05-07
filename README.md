@@ -155,7 +155,6 @@ Tests include:
 ## 📌 Future Improvements
 
 * Webhooks for token updates and enhance visibility:
-  * Future route: /api/tokens/list : To consult user application list.
   * Future route: /api/tokens/{userId}/balance : PUT method to reset token amount of an application user to a specific value.
   * Prometheus ready endpoint
 * CI/CD release note
