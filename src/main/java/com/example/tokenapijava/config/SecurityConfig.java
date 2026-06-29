@@ -50,7 +50,7 @@ public class SecurityConfig {
 
             .info(new Info()
                 .title("Token API")
-                .version("1.2.3")
+                .version("1.2.5")
                 .description("""
                     API de gestion de tokens. (DEMONSTRATION)
 
