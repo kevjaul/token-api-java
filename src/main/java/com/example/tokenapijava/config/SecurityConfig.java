@@ -6,9 +6,13 @@ import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+
+import java.util.List;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -32,6 +36,9 @@ public class SecurityConfig {
 
     private final RateLimitFilter rateLimitFilter;
 
+    @Value("${app.openapi.server-url:}")
+    private String serverUrl;
+
     public SecurityConfig(ApiKeyFilter apiKeyFilter, RateLimitFilter rateLimitFilter) {
         this.apiKeyFilter = apiKeyFilter;
         this.rateLimitFilter = rateLimitFilter;
@@ -39,7 +46,7 @@ public class SecurityConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI()
+        OpenAPI openAPI = new OpenAPI()
             .components(new Components()
                 .addSecuritySchemes("apiKeyAuth", 
                     new SecurityScheme()
@@ -62,6 +69,14 @@ public class SecurityConfig {
                         - API Key valable 30 jours (avant recyclage)
                 """)
             );
+
+            if(!serverUrl.isBlank()) {
+                openAPI.setServers(List.of(
+                    new Server().url(serverUrl).description("Generated server")
+                ));
+            }
+
+        return openAPI;
     }
 
     @Bean
